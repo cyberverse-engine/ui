@@ -17,7 +17,7 @@
 本文档是设计稿，不是实现承诺；API 细节会在里程碑中通过测试固定。
 
 > **实现状态（2026-10-27）：** M0–M3 已落地，但本次不实现 `ui::layout`/flex。
-> `ui::frame_stage` 不再有根布局，改为 `add_panel()`；每个 panel 的受管窗口固定填满层
+> `ui::layer` 不再有根布局，改为 `add_panel()`；每个 panel 的受管窗口固定填满层
 > viewport，内容、留白和遮罩全部使用 ImGui 原生组件与定位 API。flex 布局留待后续里程碑。
 
 ---
@@ -29,13 +29,13 @@
 - `ui` 直接链接并包含 Dear ImGui 和 DiligentEngine，不提供后端接口、后端选择或替代实现；
 - `ui::system` 拥有唯一的 ImGui 上下文、Diligent ImGui 渲染器、输入桥、字体、主题和层栈；
 - 一个引擎帧只开启一次 ImGui 帧，所有层共享一次 `ImGui::NewFrame()` / `ImGui::Render()`；
-- `ui::frame_stage` 表示 **一层 UI**，只包含名称、顺序、可见性和一个根 `ui::layout`；
+- `ui::layer` 表示 **一层 UI**，只包含名称、顺序、可见性和一个根 `ui::layout`；
 - `ui::layout` 是唯一的布局组件，支持 flex 方向、伸缩比例、初始尺寸、子项 min/max 和双轴拉伸；
 - 所有 panel 都通过 layout 获得显式矩形；`ui` 不做内容自适应尺寸；
 - `ui` 不提供 HUD、diagnostics、menu 的类型、枚举、预设或诊断面板；这些完全由应用定义；
 - `ui` 不提供层级的 modal/capture 输入策略；应用通过层可见性、panel 的 `no_input` 和全局
   `wants_mouse()` / `wants_keyboard()` 自行管理交互；
-- `ui::runtime_stage` 是唯一的 `runtime::frame_stage` 适配器，一次绘制全部层。
+- `ui::frame_stage` 是唯一的 `runtime::frame_stage` 适配器，一次绘制全部层。
 
 > 这是破坏性调整。当前 `ui::host`、单 panel 的 `ui::frame_stage`、anchor/stack 布局和
 > “每个 UI 层各自开启一次后端帧”的模型都会被替换。迁移策略见第 10 节。
@@ -63,7 +63,7 @@
 
 - **固定依赖。** `ui` 直接依赖 Dear ImGui 和 DiligentEngine；CMake 找不到就失败，不提供回退
   后端。
-- **只做分层渲染。** 支持任意数量的 `ui::frame_stage`，按稳定顺序绘制、可独立显示/隐藏。
+- **只做分层渲染。** 支持任意数量的 `ui::layer`，按稳定顺序绘制、可独立显示/隐藏。
   库不知道某层是 HUD、调试、菜单还是其他应用概念。
 - **一个 ImGui 帧。** 所有层在同一个 ImGui 帧中绘制，最后提交一次 overlay pass。
 - **唯一布局组件。** `ui::layout` 是可嵌套的 flex 容器；panel 只能通过 layout 加入层。
@@ -105,7 +105,7 @@
                                 │ add_layer / layout.add
 ┌───────────────────────────────▼──────────────────────────────┐
 │ ui::system                                                    │
-│  ├─ layer stack：ui::frame_stage（按 order 排序，只认顺序/可见性）│
+│  ├─ layer stack：ui::layer（按 order 排序，只认顺序/可见性）│
 │  ├─ 每层一个根 ui::layout（flex 树）                           │
 │  ├─ input bridge：platform::raw_input_state → ImGui IO        │
 │  ├─ font / theme / DPI                                        │
@@ -113,7 +113,7 @@
 │         ├─ ImGui 上下文                                       │
 │         └─ Diligent::ImGuiDiligentRenderer                    │
 └───────────────────────────────┬──────────────────────────────┘
-                                │ ui::runtime_stage
+                                │ ui::frame_stage
 ┌───────────────────────────────▼──────────────────────────────┐
 │ runtime::frame_pipeline                                       │
 │  poll → clock → prelude → update → render stages → present    │
@@ -143,7 +143,7 @@ DiligentEngine ──┘
 | # | 决策 | 理由 |
 | --- | --- | --- |
 | 1 | 固定 Dear ImGui + DiligentEngine，不做后端抽象 | 需求明确只支持这一套；抽象层只会增加维护成本。 |
-| 2 | `ui::frame_stage` 是 UI 层，不是 runtime stage | 避免每层各开一帧或“首层 begin、末层 end”的脆弱协议；由单一 `ui::runtime_stage` 统一绘制。 |
+| 2 | `ui::layer` 是 UI 层，不是 runtime stage | 避免每层各开一帧或“首层 begin、末层 end”的脆弱协议；由单一 `ui::frame_stage` 统一绘制。 |
 | 3 | `ui::system` 拥有上下文、渲染器、输入、字体和层栈 | 应用只关心内容；生命周期和 GPU 资源集中管理。 |
 | 4 | 层只提供 order/visible，不提供应用语义 | HUD、diagnostics、menu 是应用概念，库不应内置枚举或预设。 |
 | 5 | 层不提供 modal/capture 策略 | 输入策略是应用状态；库只报告全局 ImGui 捕获。应用可隐藏层或给 panel 加 `no_input`。 |
@@ -166,11 +166,11 @@ ui/
       ui.hpp
       ui/
         system.hpp
-        frame_stage.hpp
+        layer.hpp
         panel.hpp
         panel_context.hpp
         layout.hpp
-        runtime_stage.hpp
+        frame_stage.hpp
         font.hpp
         theme.hpp
         imgui.hpp
@@ -204,7 +204,7 @@ ui/
 - 唯一的 `Diligent::ImGuiDiligentRenderer`；
 - 输入桥和全局输入捕获状态；
 - 字体图集、主题和 DPI 缩放；
-- 有序的 `ui::frame_stage` 层栈；
+- 有序的 `ui::layer` 层栈；
 - 当前帧的 `render_core::frame_context` 快照。
 
 目标 API：
@@ -280,7 +280,7 @@ private:
 
 - `system::create()` 先创建 ImGui 上下文，再创建字体图集和 `ImGuiDiligentRenderer`；任何一步
   失败都抛出异常并清理已创建的对象。
-- `system` 必须在 `render_device` 和 `platform::window` 之前销毁；`ui::runtime_stage` 必须在
+- `system` 必须在 `render_device` 和 `platform::window` 之前销毁；`ui::frame_stage` 必须在
   `system` 之前从 runtime 中移除。
 - `begin_frame()` 失败（frame 无效、窗口尺寸为零、已有一帧活跃）返回 `false`；此时不得调用
   `draw()` 或 `end_frame()`。
@@ -311,9 +311,9 @@ Headless 模式：
 - 生产路径必须提供 `device` 和 `window`；`create()` 在任一缺失且 `headless == false` 时抛出
   `std::invalid_argument`。
 
-### 5.2 `ui::frame_stage`（UI 层）
+### 5.2 `ui::layer`（UI 层）
 
-`ui::frame_stage` 表示 **一层 UI**。它只知道自己的名称、顺序、可见性和根布局，不知道层里
+`ui::layer` 表示 **一层 UI**。它只知道自己的名称、顺序、可见性和根布局，不知道层里
 画的是什么应用内容。
 
 目标 API：
@@ -321,31 +321,32 @@ Headless 模式：
 ```cpp
 namespace cyberverse::ui {
 
-struct frame_stage_desc {
+struct layer_desc {
   std::string name;
   int order = 0;
   bool visible = true;
 };
 
-class frame_stage {
+class layer {
 public:
-  explicit frame_stage(frame_stage_desc desc);
-  ~frame_stage();
+  explicit layer(layer_desc desc);
+  ~layer();
 
-  frame_stage(const frame_stage&) = delete;
-  frame_stage(frame_stage&&) = delete;
-  frame_stage& operator=(const frame_stage&) = delete;
-  frame_stage& operator=(frame_stage&&) = delete;
+  layer(const layer&) = delete;
+  layer(layer&&) = delete;
+  layer& operator=(const layer&) = delete;
+  layer& operator=(layer&&) = delete;
 
   [[nodiscard]] std::string_view name() const noexcept;
   [[nodiscard]] int order() const noexcept;
-  void set_order(int order) noexcept;
-
+  void set_order(int order);
   [[nodiscard]] bool visible() const noexcept;
-  void set_visible(bool visible) noexcept;
+  void set_visible(bool visible);
 
-  [[nodiscard]] layout& root_layout() noexcept;
-  [[nodiscard]] const layout& root_layout() const noexcept;
+  panel& add_panel(std::unique_ptr<panel> content);
+  bool remove_panel(panel& content) noexcept;
+  void clear_panels();
+  [[nodiscard]] bool has_visible_panels() const noexcept;
 
 private:
   // ...
@@ -359,7 +360,7 @@ private:
 - **顺序**：`order` 小的先绘制（在下面）。同 order 按加入顺序稳定排序。层顺序每帧缓存，
   只有增删或 `set_order()` 后重建，不在热路径排序分配。
 - **可见性**：`visible == false` 的层完全跳过；如果所有层都没有可见 panel，
-  `ui::runtime_stage` 不开启 ImGui 帧，也不调用 `device.begin_frame()`。
+  `ui::frame_stage` 不开启 ImGui 帧，也不调用 `device.begin_frame()`。
 - **唯一内容入口**：层的内容只能通过 `root_layout()` 添加。没有 `add_panel()`，因此布局
   不会被绕过。
 - **没有应用语义**：层没有输入策略、背景、margin 或应用层预设；应用按自己的需要设置
@@ -686,9 +687,9 @@ ImGuiIO
 - **测试**：使用 `platform` 的 headless 窗口注入事件，断言 ImGui IO 的按键、鼠标、文本和
   `WantCaptureMouse/Keyboard`；key map 表本身做穷举测试。
 
-### 5.6 `ui::runtime_stage`
+### 5.6 `ui::frame_stage`
 
-`ui::runtime_stage` 是 `ui` 与 `runtime` 的唯一适配器。它继承 `runtime::frame_stage`，
+`ui::frame_stage` 是 `ui` 与 `runtime` 的唯一适配器。它继承 `runtime::frame_stage`，
 variable-step，`on_update` 为空；所有 UI 绘制集中在一次 `on_render` 中完成。
 
 ```cpp
@@ -697,11 +698,11 @@ namespace cyberverse::ui {
 using frame_provider = std::function<render_core::frame_context(
     double delta_time, double alpha, const runtime::frame_budget& budget)>;
 
-class runtime_stage final : public runtime::frame_stage {
+class frame_stage final : public runtime::frame_stage {
 public:
-  runtime_stage(system& ui, render_core::render_device& device);
-  runtime_stage(system& ui, frame_provider provider);
-  ~runtime_stage() override;
+  frame_stage(system& ui, render_core::render_device& device);
+  frame_stage(system& ui, frame_provider provider);
+  ~frame_stage() override;
 
   void on_update(double dt, std::uint64_t tick, const runtime::frame_budget& budget) override;
   void on_render(double dt, double alpha, const runtime::frame_budget& budget) override;
@@ -727,7 +728,7 @@ private:
 - 异常从 panel 或 renderer 传播出去；`frame_pipeline::step_frame` 不会记录该帧统计。`system`
   负责在异常路径结束 ImGui 帧。
 - 该 stage 必须注册在所有 3D 渲染 stage 之后，`render_order` 取较高值；`receive_update =
-  false`，`receive_render = true`。一个应用只注册一个 `ui::runtime_stage`。
+  false`，`receive_render = true`。一个应用只注册一个 `ui::frame_stage`。
 - 如果应用需要在 UI 之后继续渲染，必须自行恢复 viewport/scissor/render targets；v1 推荐 UI
   作为最后一个渲染阶段。
 
@@ -845,7 +846,7 @@ runtime::frame_pipeline::step_frame
   ├─ stage updates（游戏逻辑；应用可在此更新 UI 状态）
   ├─ render frame begin
   ├─ 世界 render stages（render-core 绘制 3D）
-  ├─ ui::runtime_stage::on_render          ← 唯一 UI 适配器
+  ├─ ui::frame_stage::on_render          ← 唯一 UI 适配器
   │    ├─ 检查 has_visible_content()
   │    ├─ device.begin_frame(dt, alpha, budget)
   │    ├─ system.begin_frame(frame, dt)
@@ -906,7 +907,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 1. **固定依赖。** `ui` 只支持 Dear ImGui + DiligentEngine；没有后端接口、后端选择或替代
    渲染路径。
 2. **一个引擎帧最多一次 `ImGui::NewFrame()` 和一次 `ImGui::Render()`。** 由
-   `ui::system::begin_frame()` / `end_frame()` 保证；`ui::runtime_stage` 是唯一正常入口。
+   `ui::system::begin_frame()` / `end_frame()` 保证；`ui::frame_stage` 是唯一正常入口。
 3. **层是通用的。** 库不定义 HUD/diagnostics/menu 类型、枚举、预设或诊断面板；层只有
    name/order/visible/root layout。
 4. **唯一布局。** 所有 panel 都必须通过 `ui::layout` 加入层；没有 anchor/stack/fill/absolute
@@ -921,7 +922,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 9. **所有 UI 层共享同一个 ImGui 上下文和字体图集。** 不创建第二份 ImGui。
 10. **单线程。** 所有 UI 调用在渲染线程；没有隐藏线程、异步字体加载或后台布局。
 11. **一个进程一份 ImGui。** 应用不得再链接 `Diligent-Imgui` 或创建自己的 ImGui 上下文。
-12. **生命周期顺序。** `runtime_stage` 先移除，`system` 再销毁，最后才是 `render_device` /
+12. **生命周期顺序。** `frame_stage` 先移除，`system` 再销毁，最后才是 `render_device` /
     `platform::window`。
 13. **异常安全。** panel 抛异常时当前窗口必须 `End`，帧必须 `EndFrame` 清理；异常继续传播，
     runtime 不会记录该帧统计。
@@ -970,8 +971,8 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
   - `Diligent-Imgui` 不存在时配置失败，并提示 `CYBERVERSE_DILIGENT_DIR` /
     `DILIGENT_BUILD_TOOLS`；不提供后端回退选项；
   - 增加 `CYBERVERSE_UI_BUILD_TESTS` / `CYBERVERSE_UI_BUILD_BENCHMARKS` 选项。
-- 公共头骨架：`system.hpp`、`frame_stage.hpp`、`panel.hpp`、`panel_context.hpp`、
-  `layout.hpp`、`runtime_stage.hpp`、`font.hpp`、`theme.hpp`、`imgui.hpp`；更新 umbrella
+- 公共头骨架：`system.hpp`、`layer.hpp`、`panel.hpp`、`panel_context.hpp`、
+  `layout.hpp`、`frame_stage.hpp`、`font.hpp`、`theme.hpp`、`imgui.hpp`；更新 umbrella
   `cyberverse/ui.hpp`。不创建 `diagnostics.hpp`。
 - 测试骨架：flex 布局、层排序、输入映射、system 生命周期的空测试 target。
 
@@ -1034,7 +1035,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 
 交付物：
 
-- `ui::frame_stage`：
+- `ui::layer`：
   - name/order/visible；
   - 根 `ui::layout`；
   - 层内 panel 通过布局树添加；
@@ -1049,7 +1050,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
   - `draw()` 遍历层、计算布局 placement、绘制 panel；
   - `wants_mouse()` / `wants_keyboard()` 全局捕获；
   - `begin_frame` / `draw` / `end_frame` 配对和异常语义。
-- `ui::runtime_stage`：
+- `ui::frame_stage`：
   - 继承 `runtime::frame_stage`，variable-step，`on_update` 为空；
   - `on_render` 检查可见内容、调用 `device.begin_frame`、`system.begin_frame/draw/end_frame`；
   - `frame_provider` 测试 seam：允许注入自定义 `frame_context`，便于无 GPU 测试和离屏目标。
@@ -1058,7 +1059,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 验收：
 
 - 两个通用层（例如 `layer_a` / `layer_b`）在同一个 ImGui 帧中绘制；隐藏层完全跳过。
-- 一个 `runtime_stage` 的 `on_render` 只产生一次 `NewFrame` / `Render`。
+- 一个 `frame_stage` 的 `on_render` 只产生一次 `NewFrame` / `Render`。
 - 层内布局能生成 panel 的显式矩形；panel 不再自己设置位置/尺寸。
 - panel 抛异常后 ImGui 不处于“帧进行中”状态，异常传播出 `step_frame`。
 - 层顺序、同 order 稳定性、删除 panel/层后的指针失效规则有测试。
@@ -1067,7 +1068,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 风险与缓解：
 
 - z-order：见 6.3；M2 必须做决定并写测试/文档，不能留到后期。
-- `runtime_stage` 重复调用 `device.begin_frame`：render-core 明确支持同一 presented frame
+- `frame_stage` 重复调用 `device.begin_frame`：render-core 明确支持同一 presented frame
   多次 begin_frame（只重绑目标，不推进 frame index）；在文档和测试中固定这一点。如果未来
   render-core 改变语义，改用 `frame_provider` 共享 frame context。
 - 面板窗口 ID 冲突：统一使用 `###` 稳定 ID 和 `PushID`，测试动态标题场景；应用负责层内
@@ -1103,16 +1104,16 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
   - 删除 `sandbox_imgui_host` 和 legacy 头；
   - 创建 `ui::system`，迁移字体候选、style、输入设置；
   - `hud_panel` / `pause_menu_panel` 改成新 `ui::panel`（只画内容，不再设置窗口位置）；
-  - 应用**自己定义** HUD/menu 层（`frame_stage` 只是 name/order/visible；库不知道它们
+  - 应用**自己定义** HUD/menu 层（`ui::layer` 只是 name/order/visible；库不知道它们
     是 HUD/menu）；
   - HUD 层使用 flex 根布局（padding/gap/cross stretch）；
   - menu 层由应用在打开时显示、关闭时隐藏；应用自己隐藏 HUD 层、阻止游戏输入；
-  - 注册一个 `ui::runtime_stage`，render order 高于世界 stage；
+  - 注册一个 `ui::frame_stage`，render order 高于世界 stage；
   - 删除两个旧的 `ui::frame_stage` runtime stage；
   - 更新 `session.ui_wants_mouse` 为 `ui.wants_mouse()`；
   - 保留 ESC 开关和中文/英文回退行为。
 - 更新 `sandbox-demo/AGENTS.md` / `README.md`：ui 只提供分层渲染；HUD/menu 是应用概念；
-  只有一个 `ui::runtime_stage`。
+  只有一个 `ui::frame_stage`。
 - 删除 legacy API、旧测试和旧文档描述。
 
 验收：
@@ -1123,7 +1124,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 - 只有一个 UI runtime stage；帧内只有一次 `ImGui::NewFrame` / `Render`（日志或测试断言）。
 - sandbox 构建/测试通过；截图与迁移前视觉基本一致。
 - 旧 `ui::host`、单 panel 的 `ui::frame_stage` 和 legacy 头不再存在；新的
-  `ui::frame_stage` 是层类型。
+  `ui::layer` 是层类型。
 - 布局单元测试覆盖：
   - row/column 和两个 reverse；
   - grow 1:1、1:2、多子项；
@@ -1256,7 +1257,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 | --- | --- | --- | --- |
 | 纯单元 | flex 布局、层排序、key map、panel 树 | 否 | 默认 `ctest` |
 | Headless ImGui | system 生命周期、单帧、布局 placement、输入事件、异常清理 | 否（Diligent renderer 跳过，测试 texture stub） | 默认 `ctest` |
-| Runtime 集成 | `ui::runtime_stage` 与 `frame_pipeline::step_frame`，frame_provider 注入 | 否 | 默认 `ctest` |
+| Runtime 集成 | `ui::frame_stage` 与 `frame_pipeline::step_frame`，frame_provider 注入 | 否 | 默认 `ctest` |
 | GPU smoke | 真实 device/swapchain，绘制 panel，截图/像素检查 | 是 | `CYBERVERSE_UI_TEST_GPU=1`，opt-in |
 | 基准 | flex 布局、draw data 生成、字体 reload | 否 | 手动/benchmark target |
 
@@ -1306,7 +1307,7 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 4. 每层使用根 flex 布局：
    - HUD：row/column、padding、gap、grow 比例；
    - menu：应用可以用嵌套 layout + spacer 居中，或使用一个全屏 panel 在内容里自行居中。
-5. 注册一个 `ui::runtime_stage`，render order 高于世界 stage；`receive_update = false`；
+5. 注册一个 `ui::frame_stage`，render order 高于世界 stage；`receive_update = false`；
    删除原来的 HUD/menu runtime stage。
 6. `session.ui_wants_mouse` 改为 `ui.wants_mouse()`。
 7. 删除 legacy 头和旧测试；更新 sandbox 的 CMake。
@@ -1349,9 +1350,9 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 
 1. **层 z-order 是否接受 ImGui 内部 API？**  
    建议：接受，集中在 `detail/z_order.cpp` 并做版本检查；不接受时采用 6.3 的降级约定。
-2. **`ui::frame_stage` 是否最终改名 `ui::layer`？**  
-   建议：v0.3 保留 `frame_stage` 以对应用户概念；可在文档中别名为 “UI layer”。如果后续
-   与 `runtime::frame_stage` 混淆严重，再考虑改名/别名。
+2. **`ui::layer` 与 `ui::frame_stage` 的命名。**  
+   已实现：UI 层改名为 `ui::layer`，runtime 适配器改名为 `ui::frame_stage`；避免层类型与
+   `runtime::frame_stage` 概念混淆。
 3. **panel 是否永远不管理顶层窗口？**  
    建议：v1 是；浮动调试窗口作为后续 `free_panel` 显式能力，不污染 flex 布局。
 4. **是否允许应用在 `system.draw()` 之外直接调用 ImGui？**  
@@ -1360,10 +1361,10 @@ ImGui 的窗口顺序是全局的，而层顺序是 UI 自己的概念；两者�
 5. **离屏 UI / 多 viewport 的时间点？**  
    建议：v1 只做交换链；`frame_provider` 和 `frame_context` 入口为后续离屏保留，多 viewport
    需要单独里程碑。
-6. **光标策略是否进入 `frame_stage_desc`？**  
+6. **光标策略是否进入 `layer_desc`？**  
    建议：v1 由应用处理；如果重复出现需求，再增加 cursor policy。
 7. **是否要让每个 UI 层都能被 runtime 独立调度？**  
-   建议：v1 只保留一个 `ui::runtime_stage` 负责渲染；如果层需要不同更新频率，由应用在自己的
+   建议：v1 只保留一个 `ui::frame_stage` 负责渲染；如果层需要不同更新频率，由应用在自己的
    update 阶段推进，渲染仍然集中在单一 adapter。
 8. **flex 是否需要百分比 basis / `auto` 内容尺寸 / justify-content / align-items？**  
    建议：v1 不做。当前双轴拉伸 + grow/shrink/basis 已覆盖核心需求；需要时用嵌套 layout 和
@@ -1386,10 +1387,10 @@ v0.3 完成时，应满足：
 - [ ] 唯一的 `ui::layout` 支持 flex-direction、grow/shrink/basis、子项 min/max、gap、
       padding、嵌套和 XY 双轴拉伸。
 - [ ] 所有 panel 都获得显式矩形，不使用内容自适应尺寸。
-- [ ] `ui::runtime_stage` 是唯一 runtime 适配器；应用不再实现 ImGui host。
+- [ ] `ui::frame_stage` 是唯一 runtime 适配器；应用不再实现 ImGui host。
 - [ ] CJK 字体/英文回退和 Retina/高 DPI 渲染验证通过。
 - [ ] sandbox-demo 完成迁移，使用应用自定义的层和 flex 布局；视觉和行为与迁移前一致或更好。
-- [ ] 旧 `ui::host`、单 panel `ui::frame_stage`、legacy 头和“backend-agnostic”文档全部删除。
+- [ ] 旧 `ui::host`、单 panel `ui::layer`、legacy 头和“backend-agnostic”文档全部删除。
 - [ ] 单元/headless 测试全绿；可选 GPU 测试通过；性能基线记录。
 - [ ] README、API 注释、`ui/CLAUDE.md`、工作区 AGENTS.md 与实现一致。
 - [ ] 没有重复 ImGui 符号、隐藏线程、未定义的帧内状态或悬空 panel 指针。
@@ -1442,8 +1443,8 @@ void setup_ui(cyberverse::ui::system& ui_system,
               const app_status& status,
               const app_session& session) {
   // 应用自定义的底层：库只知道它是一层 UI。
-  auto status_layer = std::make_unique<cyberverse::ui::frame_stage>(
-      cyberverse::ui::frame_stage_desc{
+  auto status_layer = std::make_unique<cyberverse::ui::layer>(
+      cyberverse::ui::layer_desc{
           .name = "app.status",
           .order = 100,
       });
@@ -1463,8 +1464,8 @@ void setup_ui(cyberverse::ui::system& ui_system,
   ui_system.add_layer(std::move(status_layer));
 
   // 应用自定义的上层；库不感知“settings”语义。
-  auto settings_layer = std::make_unique<cyberverse::ui::frame_stage>(
-      cyberverse::ui::frame_stage_desc{
+  auto settings_layer = std::make_unique<cyberverse::ui::layer>(
+      cyberverse::ui::layer_desc{
           .name = "app.settings",
           .order = 200,
       });
@@ -1502,12 +1503,12 @@ void setup_ui(cyberverse::ui::system& ui_system,
   settings_layer->set_visible(session.settings_open);
   ui_system.add_layer(std::move(settings_layer));
 
-  auto runtime_stage = std::make_unique<cyberverse::ui::runtime_stage>(ui_system, device);
+  auto ui_stage = std::make_unique<cyberverse::ui::frame_stage>(ui_system, device);
   cyberverse::runtime::frame_stage_options options;
   options.render_order = 1000;
   options.receive_update = false;
   options.receive_render = true;
-  pipeline.add_stage("ui", std::move(runtime_stage), ui_clock, options);
+  pipeline.add_stage("ui", std::move(ui_stage), ui_clock, options);
 
   // 应用需要在游戏输入前查询：
   //   ui_system.wants_mouse()
@@ -1519,7 +1520,7 @@ void setup_ui(cyberverse::ui::system& ui_system,
 
 | 术语 | 含义 |
 | --- | --- |
-| UI 层 / layer | `ui::frame_stage`，只有 name/order/visible/root layout。 |
+| UI 层 / layer | `ui::layer`，只有 name/order/visible/root layout。 |
 | panel | 层内一个受管固定矩形窗口的内容单元，实现 `ui::panel`。 |
 | layout | 唯一的 flex 容器；可嵌套，拥有 panel 和子 layout。 |
 | flex 子项 | panel 或嵌套 layout 在父布局中的 grow/shrink/basis/min/max 配置。 |

@@ -18,7 +18,7 @@ add_executable(
   input_bridge_test.cpp
   layer_test.cpp
   panel_test.cpp
-  runtime_stage_test.cpp
+  frame_stage_test.cpp
   system_test.cpp
   z_order_test.cpp
 )

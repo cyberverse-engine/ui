@@ -20,15 +20,15 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
-#include "cyberverse/ui/frame_stage.hpp"
 #include "cyberverse/ui/imgui.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/panel.hpp"
 #include "cyberverse/ui/system.hpp"
 
 namespace {
 
-using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::panel;
 using cyberverse::ui::panel_context;
 using cyberverse::ui::system;
@@ -77,7 +77,7 @@ TEST_CASE("ui renders one overlay pass to a real swap chain", "[ui][gpu]") {
     config.fonts = { cyberverse::ui::font_config{ .id = "default", .size = 16.0f } };
     auto ui = system::create(config);
 
-    auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = "gpu.layer" });
+    auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "gpu.layer" });
     layer->add_panel(std::make_unique<smoke_panel>());
     ui->add_layer(std::move(layer));
 

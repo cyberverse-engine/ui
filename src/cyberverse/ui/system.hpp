@@ -36,7 +36,7 @@ class render_device;
 
 namespace ui {
 
-class frame_stage;
+class layer;
 
 /**
  * @brief Creation description for ui::system
@@ -70,7 +70,7 @@ struct system_config {
  * - create() creates the ImGui context first, then fonts and the renderer. Any
  *   failure cleans up what was already created and throws.
  * - The system must be destroyed before the render device and platform window.
- *   Remove the ui::runtime_stage from the runtime before destroying it.
+ *   Remove the ui::frame_stage from the runtime before destroying it.
  * - begin_frame() returns false when no drawable frame exists; draw() and
  *   end_frame() must not be called then. end_frame() without an active frame is
  *   a no-op.
@@ -107,14 +107,14 @@ public:
    * @throws std::invalid_argument On an invalid or duplicate name
    * @throws std::logic_error During an active frame
    */
-  frame_stage& add_layer(std::unique_ptr<frame_stage> layer);
+  layer& add_layer(std::unique_ptr<layer> layer);
 
   /**
    * @brief Remove a layer owned by the system
    *
    * @return true when the layer was owned and removed
    */
-  bool remove_layer(frame_stage& layer) noexcept;
+  bool remove_layer(layer& layer) noexcept;
 
   /**
    * @brief Remove every layer
@@ -126,9 +126,9 @@ public:
   /**
    * @brief Find a layer by name
    *
-   * @return frame_stage* or null
+   * @return layer* or null
    */
-  [[nodiscard]] frame_stage* find_layer(std::string_view name) noexcept;
+  [[nodiscard]] layer* find_layer(std::string_view name) noexcept;
 
   /**
    * @brief Whether any visible layer has a visible panel

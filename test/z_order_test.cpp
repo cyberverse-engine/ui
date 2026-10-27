@@ -14,14 +14,14 @@
 #include <string>
 
 #include "cyberverse/ui/detail/z_order.hpp"
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::detail::display_order;
 using cyberverse::ui::test::fake_panel;
@@ -30,8 +30,8 @@ using cyberverse::ui::test::window_name;
 
 constexpr double frame_delta = 1.0 / 60.0;
 
-frame_stage& add_layer(system& ui, std::string name, int order, const std::string& panel_id) {
-  auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = std::move(name), .order = order });
+layer& add_layer(system& ui, std::string name, int order, const std::string& panel_id) {
+  auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = std::move(name), .order = order });
   auto content = std::make_unique<fake_panel>();
   content->id_value = panel_id;
   layer->add_panel(std::move(content));

@@ -1,5 +1,5 @@
 /**
- * @file frame_stage_access.hpp
+ * @file layer_access.hpp
  * @author simon2077s (simon2077s@gmail.com)
  * @brief Internal read-only access to a UI layer's panel list
  * @version 0.3
@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -23,9 +23,9 @@ namespace detail {
  * @brief Detail-only accessor used by the system draw loop
  *
  */
-class frame_stage_access {
+class layer_access {
 public:
-  [[nodiscard]] static const std::vector<std::unique_ptr<panel>>& panels(const frame_stage& layer) noexcept {
+  [[nodiscard]] static const std::vector<std::unique_ptr<panel>>& panels(const layer& layer) noexcept {
     return layer.panels_;
   }
 };

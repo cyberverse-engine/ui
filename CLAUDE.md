@@ -25,8 +25,8 @@ widget library, and it does not provide a layout engine.
   overlay pass.
 - One engine frame opens at most one ImGui frame. `system::begin_frame()` /
   `draw()` / `end_frame()` are paired; a failed begin means no draw/end.
-- `ui::frame_stage` is a UI layer: name, order, visibility, and an ordered panel
-  list. It is not a `runtime::frame_stage`; `ui::runtime_stage` is the only
+- `ui::layer` is a UI layer: name, order, visibility, and an ordered panel
+  list. It is not a `runtime::frame_stage`; `ui::frame_stage` is the only
   runtime adapter.
 - Every panel is a managed Dear ImGui window that fills the layer's logical
   viewport. Panels must draw content only and position it with native Dear ImGui
@@ -37,12 +37,12 @@ widget library, and it does not provide a layout engine.
 - If a panel throws, its window must still end, the ImGui frame must be
   discarded, and the exception must propagate. The next frame must be usable.
 - Keep `cyberverse/ui/imgui.hpp` as the only public header that includes
-  `imgui.h`. Core headers (`system.hpp`, `frame_stage.hpp`, `panel*.hpp`,
-  `runtime_stage.hpp`, `font.hpp`, `theme.hpp`) stay free of ImGui and Diligent
+  `imgui.h`. Core headers (`system.hpp`, `layer.hpp`, `panel*.hpp`,
+  `frame_stage.hpp`, `font.hpp`, `theme.hpp`) stay free of ImGui and Diligent
   includes.
 - Single-threaded, render-thread only. Do not add hidden threads or
   asynchronous UI frames.
-- One process, one ImGui context, one `ui::runtime_stage`.
+- One process, one ImGui context, one `ui::frame_stage`.
 
 ## Layer z-order
 

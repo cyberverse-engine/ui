@@ -9,10 +9,10 @@ set(
   HEADER_FILES
   cyberverse/ui.hpp
   cyberverse/ui/system.hpp
-  cyberverse/ui/frame_stage.hpp
+  cyberverse/ui/layer.hpp
   cyberverse/ui/panel.hpp
   cyberverse/ui/panel_context.hpp
-  cyberverse/ui/runtime_stage.hpp
+  cyberverse/ui/frame_stage.hpp
   cyberverse/ui/font.hpp
   cyberverse/ui/theme.hpp
   cyberverse/ui/imgui.hpp
@@ -21,7 +21,7 @@ set(
 set(
   DETAIL_HEADER_FILES
   cyberverse/ui/detail/frame_phase.hpp
-  cyberverse/ui/detail/frame_stage_access.hpp
+  cyberverse/ui/detail/layer_access.hpp
   cyberverse/ui/detail/input_bridge.hpp
   cyberverse/ui/detail/key_map.hpp
   cyberverse/ui/detail/system_impl.hpp
@@ -30,8 +30,8 @@ set(
 
 set(
   SOURCE_FILES
+  cyberverse/ui/layer.cpp
   cyberverse/ui/frame_stage.cpp
-  cyberverse/ui/runtime_stage.cpp
   cyberverse/ui/system.cpp
   cyberverse/ui/detail/input_bridge.cpp
   cyberverse/ui/detail/key_map.cpp

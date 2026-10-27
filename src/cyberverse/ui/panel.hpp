@@ -75,7 +75,7 @@ enum class panel_feature : std::uint32_t {
 class panel_context;
 
 /**
- * @brief One content unit managed by a ui::frame_stage
+ * @brief One content unit managed by a ui::layer
  *
  * The layer owns the Dear ImGui window and always sizes it to the layer's
  * logical viewport. draw() only paints content; it must not open a top-level

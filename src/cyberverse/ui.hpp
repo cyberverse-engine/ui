@@ -11,9 +11,9 @@
 #pragma once
 
 #include "cyberverse/ui/font.hpp"
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/panel.hpp"
 #include "cyberverse/ui/panel_context.hpp"
-#include "cyberverse/ui/runtime_stage.hpp"
+#include "cyberverse/ui/frame_stage.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/theme.hpp"

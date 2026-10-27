@@ -17,14 +17,14 @@
 
 #include <imgui_internal.h>
 
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::panel_context;
 using cyberverse::ui::panel_feature;
 using cyberverse::ui::system;
@@ -36,8 +36,8 @@ constexpr float width = 320.0f;
 constexpr float height = 200.0f;
 constexpr double frame_delta = 1.0 / 60.0;
 
-frame_stage& add_layer(system& ui, std::string name) {
-  return ui.add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = std::move(name) }));
+layer& add_layer(system& ui, std::string name) {
+  return ui.add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = std::move(name) }));
 }
 
 void render(system& ui) {

@@ -23,9 +23,9 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/ui/detail/frame_phase.hpp"
-#include "cyberverse/ui/detail/frame_stage_access.hpp"
+#include "cyberverse/ui/detail/layer_access.hpp"
 #include "cyberverse/ui/detail/z_order.hpp"
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/panel_context.hpp"
 
 namespace cyberverse {
@@ -279,7 +279,7 @@ void system::impl::load_fonts() {
   }
 }
 
-frame_stage& system::impl::add_layer(std::unique_ptr<frame_stage> layer) {
+layer& system::impl::add_layer(std::unique_ptr<layer> layer) {
   detail::require_between_frames("add a UI layer");
   if (layer == nullptr) {
     throw std::invalid_argument("cyberverse::ui::system: layer must not be null");
@@ -292,7 +292,7 @@ frame_stage& system::impl::add_layer(std::unique_ptr<frame_stage> layer) {
   return *layers_.back();
 }
 
-bool system::impl::remove_layer(frame_stage& layer) noexcept {
+bool system::impl::remove_layer(layer& layer) noexcept {
   if (detail::frame_in_progress()) {
     return false;
   }
@@ -313,7 +313,7 @@ void system::impl::clear_layers() {
   layer_signature_.clear();
 }
 
-frame_stage* system::impl::find_layer(std::string_view name) noexcept {
+layer* system::impl::find_layer(std::string_view name) noexcept {
   for (const auto& layer : layers_) {
     if (layer != nullptr && layer->name() == name) {
       return layer.get();
@@ -463,7 +463,7 @@ void system::impl::rebuild_draw_order() {
     layer_signature_.emplace_back(layer.get(), layer->order());
     draw_order_.push_back(layer.get());
   }
-  std::stable_sort(draw_order_.begin(), draw_order_.end(), [](const frame_stage* left, const frame_stage* right) {
+  std::stable_sort(draw_order_.begin(), draw_order_.end(), [](const layer* left, const layer* right) {
     return left->order() < right->order();
   });
 }
@@ -496,7 +496,7 @@ ImGuiWindowFlags system::impl::window_flags(const panel& content) const {
   return flags;
 }
 
-void system::impl::build_window_name(const frame_stage& layer, const panel& content) {
+void system::impl::build_window_name(const layer& layer, const panel& content) {
   const std::string_view title = content.title();
   const std::string_view id = content.id();
 
@@ -521,14 +521,14 @@ void system::impl::draw(const system& owner) {
     ImGuiIO& io = ImGui::GetIO();
     const ImVec2 display = io.DisplaySize;
 
-    for (frame_stage* layer : draw_order_) {
+    for (layer* layer : draw_order_) {
       if (layer == nullptr || !layer->visible() || !layer->has_visible_panels()) {
         continue;
       }
 
       layer_window_names_.clear();
 
-      for (auto& content : detail::frame_stage_access::panels(*layer)) {
+      for (auto& content : detail::layer_access::panels(*layer)) {
         if (content == nullptr || !content->visible()) {
           continue;
         }
@@ -657,13 +657,13 @@ std::unique_ptr<system> system::create(const system_config& config) {
   return std::unique_ptr<system>(new system(std::move(implementation)));
 }
 
-frame_stage& system::add_layer(std::unique_ptr<frame_stage> layer) { return impl_->add_layer(std::move(layer)); }
+layer& system::add_layer(std::unique_ptr<layer> layer) { return impl_->add_layer(std::move(layer)); }
 
-bool system::remove_layer(frame_stage& layer) noexcept { return impl_->remove_layer(layer); }
+bool system::remove_layer(layer& layer) noexcept { return impl_->remove_layer(layer); }
 
 void system::clear_layers() { impl_->clear_layers(); }
 
-frame_stage* system::find_layer(std::string_view name) noexcept { return impl_->find_layer(name); }
+layer* system::find_layer(std::string_view name) noexcept { return impl_->find_layer(name); }
 
 bool system::has_visible_content() const noexcept { return impl_->has_visible_content(); }
 

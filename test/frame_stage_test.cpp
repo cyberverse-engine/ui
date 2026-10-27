@@ -1,7 +1,7 @@
 /**
- * @file runtime_stage_test.cpp
+ * @file frame_stage_test.cpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief ui::runtime_stage integration tests without a GPU
+ * @brief ui::frame_stage runtime adapter tests without a GPU
  * @version 0.3
  * @date 2026-10-27
  *
@@ -17,8 +17,8 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/panel.hpp"
-#include "cyberverse/ui/runtime_stage.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "support/test_ui.hpp"
 
@@ -28,8 +28,8 @@ using cyberverse::render_core::frame_context;
 using cyberverse::render_core::viewport;
 using cyberverse::runtime::frame_budget;
 using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
-using cyberverse::ui::runtime_stage;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::test::fake_panel;
 using cyberverse::ui::test::make_headless;
@@ -49,16 +49,16 @@ frame_context detached_frame() {
 
 TEST_CASE("the runtime adapter drives one ImGui frame through its provider", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app" }));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_panel>();
   fake_panel* content_ptr = content.get();
   layer.add_panel(std::move(content));
 
   int provider_calls = 0;
-  runtime_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
-                        ++provider_calls;
-                        return detached_frame();
-                      } };
+  frame_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
+                      ++provider_calls;
+                      return detached_frame();
+                    } };
 
   const int frame_count_before = ImGui::GetFrameCount();
   stage.on_render(frame_delta, 1.0, frame_budget::unlimited());
@@ -71,16 +71,16 @@ TEST_CASE("the runtime adapter drives one ImGui frame through its provider", "[u
 
 TEST_CASE("the runtime adapter skips the provider without visible content", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app" }));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_panel>();
   content->visible_value = false;
   layer.add_panel(std::move(content));
 
   int provider_calls = 0;
-  runtime_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
-                        ++provider_calls;
-                        return detached_frame();
-                      } };
+  frame_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
+                      ++provider_calls;
+                      return detached_frame();
+                    } };
 
   const int frame_count_before = ImGui::GetFrameCount();
   stage.on_render(frame_delta, 1.0, frame_budget::unlimited());
@@ -91,14 +91,14 @@ TEST_CASE("the runtime adapter skips the provider without visible content", "[ui
 
 TEST_CASE("the runtime adapter ignores an invalid frame", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app" }));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_panel>();
   fake_panel* content_ptr = content.get();
   layer.add_panel(std::move(content));
 
-  runtime_stage stage{ *context.ui, [](double, double, const frame_budget&) {
-                        return frame_context{};
-                      } };
+  frame_stage stage{ *context.ui, [](double, double, const frame_budget&) {
+                      return frame_context{};
+                    } };
   stage.on_render(frame_delta, 1.0, frame_budget::unlimited());
 
   REQUIRE(content_ptr->draw_count == 0);
@@ -107,19 +107,19 @@ TEST_CASE("the runtime adapter ignores an invalid frame", "[ui][runtime-stage]")
 
 TEST_CASE("panel exceptions propagate through the runtime adapter", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app" }));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_panel>();
   content->throw_on_draw = true;
   layer.add_panel(std::move(content));
 
-  runtime_stage stage{ *context.ui, [](double, double, const frame_budget&) {
-                        return detached_frame();
-                      } };
+  frame_stage stage{ *context.ui, [](double, double, const frame_budget&) {
+                      return detached_frame();
+                    } };
   REQUIRE_THROWS_AS(stage.on_render(frame_delta, 1.0, frame_budget::unlimited()), std::runtime_error);
   REQUIRE_FALSE(context.ui->frame_active());
 }
 
 TEST_CASE("an empty provider is rejected", "[ui][runtime-stage]") {
   auto context = make_headless();
-  REQUIRE_THROWS_AS(runtime_stage(*context.ui, cyberverse::ui::frame_provider{}), std::invalid_argument);
+  REQUIRE_THROWS_AS(frame_stage(*context.ui, cyberverse::ui::frame_provider{}), std::invalid_argument);
 }

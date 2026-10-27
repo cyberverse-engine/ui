@@ -17,7 +17,7 @@
 namespace cyberverse {
 namespace ui {
 
-class frame_stage;
+class layer;
 class system;
 
 /**
@@ -30,7 +30,7 @@ class system;
  */
 struct panel_context {
   const system& ui;              ///< Owning UI runtime
-  const frame_stage& stage;      ///< Layer that owns the panel
+  const layer& stage;            ///< Layer that owns the panel
   rect bounds{};                 ///< Logical layer viewport rectangle
   double delta_time = 0.0;       ///< Frame delta in seconds
   std::uint64_t frame_index = 0; ///< Monotonic UI frame index

@@ -23,7 +23,7 @@
 #include <imgui.h>
 
 #include "cyberverse/ui/detail/input_bridge.hpp"
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 
 namespace cyberverse {
@@ -45,10 +45,10 @@ struct system::impl {
   impl& operator=(const impl&) = delete;
   impl& operator=(impl&&) = delete;
 
-  frame_stage& add_layer(std::unique_ptr<frame_stage> layer);
-  bool remove_layer(frame_stage& layer) noexcept;
+  layer& add_layer(std::unique_ptr<layer> layer);
+  bool remove_layer(layer& layer) noexcept;
   void clear_layers();
-  [[nodiscard]] frame_stage* find_layer(std::string_view name) noexcept;
+  [[nodiscard]] layer* find_layer(std::string_view name) noexcept;
   [[nodiscard]] bool has_visible_content() const noexcept;
 
   bool begin_frame(const render_core::frame_context& frame, double delta_time);
@@ -78,7 +78,7 @@ private:
   void update_input();
   void rebuild_draw_order();
   [[nodiscard]] ImGuiWindowFlags window_flags(const panel& content) const;
-  void build_window_name(const frame_stage& layer, const panel& content);
+  void build_window_name(const layer& layer, const panel& content);
   void abort_frame() noexcept;
   void destroy_context() noexcept;
 
@@ -88,9 +88,9 @@ private:
   std::string ini_path_;
   std::string window_name_;
   std::vector<std::string> layer_window_names_;
-  std::vector<std::unique_ptr<frame_stage>> layers_;
-  std::vector<frame_stage*> draw_order_;
-  std::vector<std::pair<frame_stage*, int>> layer_signature_;
+  std::vector<std::unique_ptr<layer>> layers_;
+  std::vector<layer*> draw_order_;
+  std::vector<std::pair<layer*, int>> layer_signature_;
   std::unordered_map<std::string, bool> font_loaded_;
   std::vector<std::vector<ImWchar>> custom_ranges_;
   detail::input_bridge input_;

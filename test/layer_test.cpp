@@ -15,14 +15,14 @@
 #include <string>
 #include <vector>
 
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::panel_context;
 using cyberverse::ui::system;
 using cyberverse::ui::test::fake_panel;
@@ -32,11 +32,11 @@ constexpr float width = 320.0f;
 constexpr float height = 200.0f;
 constexpr double frame_delta = 1.0 / 60.0;
 
-frame_stage& add_layer(system& ui, std::string name, int order) {
-  return ui.add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = std::move(name), .order = order }));
+layer& add_layer(system& ui, std::string name, int order) {
+  return ui.add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = std::move(name), .order = order }));
 }
 
-fake_panel& add_recording_panel(frame_stage& layer, std::string id, std::vector<std::string>& draw_order) {
+fake_panel& add_recording_panel(layer& layer, std::string id, std::vector<std::string>& draw_order) {
   auto content = std::make_unique<fake_panel>();
   content->id_value = std::move(id);
   content->on_draw = [&draw_order, id = content->id_value](panel_context&) {
@@ -108,9 +108,9 @@ TEST_CASE("hidden layers and hidden panels are skipped", "[ui][layer]") {
 }
 
 TEST_CASE("layer names and panel ids are validated", "[ui][layer]") {
-  REQUIRE_THROWS_AS(frame_stage{ frame_stage_desc{ .name = "" } }, std::invalid_argument);
-  REQUIRE_THROWS_AS(frame_stage{ frame_stage_desc{ .name = "bad###name" } }, std::invalid_argument);
-  REQUIRE_THROWS_AS(frame_stage{ frame_stage_desc{ .name = "bad/name" } }, std::invalid_argument);
+  REQUIRE_THROWS_AS(layer{ layer_desc{ .name = "" } }, std::invalid_argument);
+  REQUIRE_THROWS_AS(layer{ layer_desc{ .name = "bad###name" } }, std::invalid_argument);
+  REQUIRE_THROWS_AS(layer{ layer_desc{ .name = "bad/name" } }, std::invalid_argument);
 
   auto context = make_headless();
   auto& layer = add_layer(*context.ui, "app", 0);

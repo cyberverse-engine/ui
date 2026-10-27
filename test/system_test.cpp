@@ -14,13 +14,13 @@
 #include <memory>
 #include <stdexcept>
 
-#include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::frame_stage;
-using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::layer;
+using cyberverse::ui::layer_desc;
 using cyberverse::ui::panel_context;
 using cyberverse::ui::system;
 using cyberverse::ui::system_config;
@@ -63,7 +63,7 @@ TEST_CASE("a non-headless system requires a device and window", "[ui][system]") 
 
 TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
   auto context = make_headless();
-  auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.hud" });
+  auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.hud" });
   auto content = std::make_unique<fake_panel>();
   content->on_draw = [](panel_context&) {
     ImGui::TextUnformatted("cyberverse");
@@ -94,11 +94,11 @@ TEST_CASE("destroying a system with an active frame is safe", "[ui][system]") {
 
 TEST_CASE("structural mutations during a frame are rejected", "[ui][system]") {
   auto context = make_headless();
-  auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.hud" });
-  frame_stage* layer_ptr = &context.ui->add_layer(std::move(layer));
+  auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.hud" });
+  cyberverse::ui::layer* layer_ptr = &context.ui->add_layer(std::move(layer));
 
   REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
-  REQUIRE_THROWS_AS(context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.menu" })),
+  REQUIRE_THROWS_AS(context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.menu" })),
                     std::logic_error);
   REQUIRE_THROWS_AS(layer_ptr->set_visible(false), std::logic_error);
   REQUIRE_THROWS_AS(layer_ptr->set_order(10), std::logic_error);

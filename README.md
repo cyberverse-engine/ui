@@ -26,11 +26,11 @@ of falling back to another backend. Configure with
 
 - `ui::system`: owns the ImGui context, Diligent renderer, fonts, theme, input
   bridge, and layer stack. One engine frame opens at most one ImGui frame.
-- `ui::frame_stage`: one UI layer with a name, order, visibility, and an ordered
+- `ui::layer`: one UI layer with a name, order, visibility, and an ordered
   panel list.
 - `ui::panel` / `ui::panel_context`: one content unit and the frame information
   passed to `draw()`.
-- `ui::runtime_stage`: the only `runtime::frame_stage` adapter. It draws every
+- `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
   layer in one overlay pass and should be registered after all 3D stages.
 - `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for panel
   implementations and style/escape-hatch code.
@@ -53,7 +53,7 @@ library only orders layers and manages the panel windows.
 
 ## Frame lifecycle
 
-1. `ui::runtime_stage::on_render` checks `system::has_visible_content()`.
+1. `ui::frame_stage::on_render` checks `system::has_visible_content()`.
 2. It obtains a `render_core::frame_context` (normally
    `render_device::begin_frame`).
 3. `system::begin_frame(frame, dt)` binds the frame's color/depth targets,
@@ -79,12 +79,12 @@ when input must be blocked immediately.
 ## Ownership and threading
 
 - `ui::system` must be destroyed before the render device and platform window.
-  Remove the `ui::runtime_stage` from the runtime before destroying the system.
+  Remove the `ui::frame_stage` from the runtime before destroying the system.
 - One process has one Dear ImGui context. Applications must not link another
   ImGui copy or create a second context.
 - All calls are render-thread calls. There are no hidden worker threads and no
   asynchronous UI frames.
-- Register exactly one `ui::runtime_stage`; it must render after 3D and before
+- Register exactly one `ui::frame_stage`; it must render after 3D and before
   present.
 
 ## Layer z-order
@@ -121,12 +121,12 @@ config.device = &device;
 config.window = &window;
 auto ui = cyberverse::ui::system::create(config);
 
-auto layer = std::make_unique<cyberverse::ui::frame_stage>(
-    cyberverse::ui::frame_stage_desc{ .name = "app.status", .order = 100 });
+auto layer = std::make_unique<cyberverse::ui::layer>(
+    cyberverse::ui::layer_desc{ .name = "app.status", .order = 100 });
 layer->add_panel(std::make_unique<status_panel>());
 ui->add_layer(std::move(layer));
 
-auto stage = std::make_unique<cyberverse::ui::runtime_stage>(*ui, device);
+auto stage = std::make_unique<cyberverse::ui::frame_stage>(*ui, device);
 cyberverse::runtime::frame_stage_options options;
 options.render_order = 1000;
 options.receive_update = false;
