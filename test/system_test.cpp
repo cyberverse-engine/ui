@@ -1,0 +1,118 @@
+/**
+ * @file system_test.cpp
+ * @author simon2077s (simon2077s@gmail.com)
+ * @brief UI system lifecycle tests
+ * @version 0.3
+ * @date 2026-10-27
+ *
+ * @copyright Copyright (c) 2026
+ *
+ */
+#include <catch2/catch_test_macros.hpp>
+
+#include <limits>
+#include <memory>
+#include <stdexcept>
+
+#include "cyberverse/ui/frame_stage.hpp"
+#include "support/test_ui.hpp"
+
+namespace {
+
+using cyberverse::ui::frame_stage;
+using cyberverse::ui::frame_stage_desc;
+using cyberverse::ui::panel_context;
+using cyberverse::ui::system;
+using cyberverse::ui::system_config;
+using cyberverse::ui::test::fake_panel;
+using cyberverse::ui::test::make_headless;
+
+} // namespace
+
+TEST_CASE("headless system pairs begin and end", "[ui][system]") {
+  auto context = make_headless();
+  REQUIRE_FALSE(context.ui->frame_active());
+
+  REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
+  REQUIRE(context.ui->frame_active());
+  REQUIRE_FALSE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
+  REQUIRE(context.ui->frame_active());
+
+  context.ui->draw();
+  context.ui->end_frame();
+  REQUIRE_FALSE(context.ui->frame_active());
+
+  context.ui->end_frame();
+  REQUIRE_FALSE(context.ui->frame_active());
+}
+
+TEST_CASE("headless begin_frame rejects unusable sizes", "[ui][system]") {
+  auto context = make_headless();
+
+  REQUIRE_FALSE(context.ui->begin_frame(0.0f, 100.0f, 1.0 / 60.0));
+  REQUIRE_FALSE(context.ui->begin_frame(100.0f, 0.0f, 1.0 / 60.0));
+  REQUIRE_FALSE(context.ui->begin_frame(-10.0f, 100.0f, 1.0 / 60.0));
+  REQUIRE_FALSE(context.ui->begin_frame(std::numeric_limits<float>::quiet_NaN(), 100.0f, 1.0 / 60.0));
+  REQUIRE_FALSE(context.ui->frame_active());
+}
+
+TEST_CASE("a non-headless system requires a device and window", "[ui][system]") {
+  system_config config;
+  REQUIRE_THROWS_AS(system::create(config), std::invalid_argument);
+}
+
+TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
+  auto context = make_headless();
+  auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.hud" });
+  auto content = std::make_unique<fake_panel>();
+  content->on_draw = [](panel_context&) {
+    ImGui::TextUnformatted("cyberverse");
+  };
+  layer->add_panel(std::move(content));
+  context.ui->add_layer(std::move(layer));
+
+  const int frame_count_before = ImGui::GetFrameCount();
+  REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
+  context.ui->draw();
+  context.ui->end_frame();
+
+  REQUIRE(ImGui::GetFrameCount() == frame_count_before + 1);
+  const ImDrawData* draw_data = ImGui::GetDrawData();
+  REQUIRE(draw_data != nullptr);
+  REQUIRE(draw_data->CmdListsCount > 0);
+  REQUIRE(draw_data->TotalVtxCount > 0);
+}
+
+TEST_CASE("destroying a system with an active frame is safe", "[ui][system]") {
+  {
+    auto context = make_headless();
+    REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
+    REQUIRE(context.ui->frame_active());
+  }
+  SUCCEED();
+}
+
+TEST_CASE("structural mutations during a frame are rejected", "[ui][system]") {
+  auto context = make_headless();
+  auto layer = std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.hud" });
+  frame_stage* layer_ptr = &context.ui->add_layer(std::move(layer));
+
+  REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
+  REQUIRE_THROWS_AS(context.ui->add_layer(std::make_unique<frame_stage>(frame_stage_desc{ .name = "app.menu" })),
+                    std::logic_error);
+  REQUIRE_THROWS_AS(layer_ptr->set_visible(false), std::logic_error);
+  REQUIRE_THROWS_AS(layer_ptr->set_order(10), std::logic_error);
+  REQUIRE_FALSE(context.ui->remove_layer(*layer_ptr));
+  REQUIRE_THROWS_AS(context.ui->clear_layers(), std::logic_error);
+  context.ui->end_frame();
+}
+
+TEST_CASE("capture flags default to false and font ids are reported", "[ui][system]") {
+  auto context = make_headless();
+  REQUIRE_FALSE(context.ui->wants_mouse());
+  REQUIRE_FALSE(context.ui->wants_keyboard());
+  REQUIRE(context.ui->font_loaded("default"));
+  REQUIRE_FALSE(context.ui->font_loaded("cjk"));
+  REQUIRE(context.ui->find_layer("missing") == nullptr);
+  REQUIRE_FALSE(context.ui->has_visible_content());
+}
