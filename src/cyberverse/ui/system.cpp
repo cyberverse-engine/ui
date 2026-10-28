@@ -44,8 +44,12 @@ void on_platform_ime_data(ImGuiContext* /*context*/, ImGuiViewport* viewport, Im
   if (window == nullptr) {
     return;
   }
-  window->set_ime_caret(
-      platform::ime_caret{ data->InputPos.x, data->InputPos.y, data->InputLineHeight, data->WantVisible });
+  // ImGui reports screen coordinates; platform backends want window-content
+  // coordinates. The main viewport position is the window's screen origin.
+  window->set_ime_caret(platform::ime_caret{ data->InputPos.x - viewport->Pos.x,
+                                             data->InputPos.y - viewport->Pos.y,
+                                             data->InputLineHeight,
+                                             data->WantVisible });
 }
 #endif
 
