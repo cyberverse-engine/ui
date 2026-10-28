@@ -4,10 +4,10 @@ Layered UI runtime for Cyberverse Engine applications. `cyberverse::ui` owns the
 single Dear ImGui context, the Diligent ImGui renderer, the input bridge, fonts,
 theme, and an ordered stack of UI layers.
 
-This is v0.3: the library hard-depends on Dear ImGui and DiligentEngine. There is
-no UI backend interface and no renderer abstraction. The only layout model is
-"one managed, full-viewport window per panel"; panel content positions itself
-with native Dear ImGui APIs.
+This is v0.4: the library hard-depends on Dear ImGui and DiligentEngine. There is
+no UI backend interface and no renderer abstraction. Every panel is still one
+managed, full-viewport ImGui window; panel content may use native Dear ImGui
+directly or the optional `ui::widgets` standard component layer.
 
 ## Dependencies
 
@@ -15,6 +15,8 @@ with native Dear ImGui APIs.
 - `cyberverse::platform::static_lib`
 - `cyberverse::render_core::static_lib`
 - `Diligent-Imgui` (Dear ImGui, shipped through DiligentTools)
+- [Yoga](https://github.com/facebook/yoga) v3.2.1 (MIT), linked **privately** for
+  `ui::widgets` flexbox layout
 
 `Diligent-Imgui` is a hard requirement. If DiligentEngine is configured without
 `DILIGENT_BUILD_TOOLS=ON`, configuration fails with an actionable error instead
@@ -32,15 +34,18 @@ of falling back to another backend. Configure with
   passed to `draw()`.
 - `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
   layer in one overlay pass and should be registered after all 3D stages.
+- `ui::widgets`: an optional standard component layer built on native Dear ImGui
+  controls and Yoga: flexbox, panel, scroll view, collapse group, text, button,
+  checkbox, radio, text input, and a native escape hatch. It is optional to use
+  from a panel but is always built with the library.
 - `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for panel
   implementations and style/escape-hatch code.
 
-## No layout component
+## Panels and the optional widget layer
 
-`ui` does not provide a flexbox, anchors, stacks, spacers, or any other layout
-or widget component. Every panel's window is created by the layer and always
-fills the layer's logical viewport (`io.DisplaySize`). A panel draws its content
-inside that rectangle using native Dear ImGui APIs:
+`ui` does not force a layout model on panels. A panel's window is created by the
+layer and always fills the layer's logical viewport (`io.DisplaySize`). A panel
+can draw content inside that rectangle with native Dear ImGui APIs:
 
 - `ImGui::SetCursorPos` / `ImGui::Dummy` / `ImGui::Spacing` for positioning and
   whitespace;
@@ -48,8 +53,66 @@ inside that rectangle using native Dear ImGui APIs:
 - `ImGui::GetBackgroundDrawList()` for a dim backdrop;
 - ordinary Dear ImGui widgets for controls.
 
-HUD, diagnostics, menus, and modal behavior are application concepts. The
-library only orders layers and manages the panel windows.
+For applications that want a reusable, flexbox-based component layer, include
+`cyberverse/ui/widgets.hpp` and call `ui::widgets::render(root, theme)` inside the
+panel. The widget layer is deliberately thin:
+
+- `flexbox` uses Yoga for row/column layout, gap, padding, justify, align,
+  grow/shrink, and fit/stretch sizing;
+- `panel`, `scroll_view`, and `collapse_group` are containers;
+- `text` supports explicit newlines and automatic wrapping;
+- `button`, `checkbox`, `radio`, and `text_input` wrap Dear ImGui's native
+  controls instead of reimplementing interaction or rendering;
+- `native` gives arbitrary ImGui content (ImPlot, ImNodes, ImSpinner, custom draw
+  lists) an explicit rectangle, stable ID, and clip;
+- `theme` and per-widget `.style()` override backgrounds, borders, text colors,
+  and padding; missing values fall back to the active `ImGuiStyle`.
+
+All components support fixed width/height, fit-content, and stretch independently
+on each axis. The tree is immediate-mode and per-frame: persistent state (text
+buffers, checked values, selected radio values) is supplied by the application.
+
+```cpp
+#include "cyberverse/ui/widgets.hpp"
+
+void settings_panel::draw(cyberverse::ui::panel_context&) {
+  static std::string name;
+  static bool remember = true;
+
+  ui::widgets::flexbox root;
+  root.padding({ 20, 16, 20, 16 }).gap(8);
+
+  auto& title = root.add(ui::widgets::flexbox{}
+                             .direction(ui::widgets::flex_direction::row)
+                             .gap(8));
+  title.add(ui::widgets::text{ "Settings" });
+  root.add(ui::widgets::text_input{ "player.name", name }
+               .placeholder("Name")
+               .width_stretch());
+  root.add(ui::widgets::checkbox{ "Remember", remember });
+  root.add(ui::widgets::button{ "Apply", [] { /* ... */ } }.width_stretch());
+
+  ui::widgets::render(root);
+}
+```
+
+### Why not ImGui tables?
+
+`ImGui::BeginTable()` / `TableSetupColumn()` are excellent for tabular data,
+forms, and grids, but they are not a general flexbox: tables have no vertical
+grow/stretch, no per-row flex weights, no per-item min/max, and no layout pass
+independent of drawing. `ui::widgets` therefore uses Yoga for flexbox and leaves
+native tables available to applications. A dedicated `widgets::table` wrapper
+may be added later; it will not replace the flexbox engine.
+
+### IME
+
+`text_input` uses Dear ImGui's committed UTF-8 text path, so CJK input works
+through the platform text callback. On non-Windows platforms `ui::system`
+installs ImGui's `Platform_SetImeDataFn` and forwards the caret rectangle to
+`platform::window::set_ime_caret()`; on Windows the native ImGui IME path uses
+`PlatformHandleRaw`. Inline preedit text and candidate-window positioning on
+macOS are not implemented yet (see `docs/roadmap.md`, M5).
 
 ## Frame lifecycle
 
@@ -151,6 +214,11 @@ cmake -S . -B /tmp/cyberverse-ui-test \
 cmake --build /tmp/cyberverse-ui-test -j 8
 ctest --test-dir /tmp/cyberverse-ui-test --output-on-failure
 ```
+
+Yoga is fetched from `https://github.com/facebook/yoga.git` at tag `v3.2.1`
+unless an existing `yogacore` target is available. To use a local checkout, pass
+`-DCYBERVERSE_UI_YOGA_DIR=/path/to/yoga`; the configure step builds only Yoga's
+`yoga/` subdirectory. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The default suite does not open a window or require Vulkan/MoltenVK. The real
 GPU smoke test is opt-in:

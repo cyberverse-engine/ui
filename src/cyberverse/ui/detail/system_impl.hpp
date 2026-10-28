@@ -72,6 +72,7 @@ struct system::impl {
 
 private:
   void create_context();
+  void install_ime_hook();
   void apply_theme(theme_kind theme);
   void load_fonts();
   [[nodiscard]] const ImWchar* ranges_for(const font_config& config);

@@ -1,20 +1,25 @@
 # cyberverse-ui rules
 
-`cyberverse::ui` is the Cyberverse Engine **layered UI runtime**. It hard-depends
-on Dear ImGui and DiligentEngine. It is not a backend-agnostic framework, not a
-widget library, and it does not provide a layout engine.
+`cyberverse::ui` is the Cyberverse Engine **layered UI runtime** with an optional
+standard widget layer. It hard-depends on Dear ImGui and DiligentEngine and
+privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
 
 ## Scope
 
 - Keep the fixed dependency set: `cyberverse::runtime::static_lib`,
   `cyberverse::platform::static_lib`,
-  `cyberverse::render_core::static_lib`, and `Diligent-Imgui` (Dear ImGui).
+  `cyberverse::render_core::static_lib`, `Diligent-Imgui` (Dear ImGui), and the
+  private `yogacore` target.
 - There is no `ui::renderer`/backend interface, no backend selection option, and
   no fallback to another UI or rendering backend. Configure-time failure is the
   intended behavior when `Diligent-Imgui` is unavailable.
-- Do not add a layout engine (flex, anchors, stacks), a widget/component library,
-  HUD/menu/diagnostics types, or layer-level modal/capture policies. HUD and
-  menu are application concepts.
+- `ui::widgets` is the only standard component layer. It must remain a thin
+  adapter over Dear ImGui native controls; do not reimplement button, checkbox,
+  radio, text input, scrolling, or text editing.
+- Flexbox layout comes from Yoga. Do not add anchors, stacks, grid, flex-wrap, or
+  a second layout engine. ImGui tables are not the flexbox backend.
+- Do not add HUD/menu/diagnostics types or layer-level modal/capture policies;
+  HUD and menu are application concepts.
 - Do not add font files, assets, or application types to the library.
 
 ## API rules
@@ -29,17 +34,21 @@ widget library, and it does not provide a layout engine.
   list. It is not a `runtime::frame_stage`; `ui::frame_stage` is the only
   runtime adapter.
 - Every panel is a managed Dear ImGui window that fills the layer's logical
-  viewport. Panels must draw content only and position it with native Dear ImGui
-  APIs (`SetCursorPos`, `Dummy`, `Spacing`, `BeginChild`, draw lists, widgets).
+  viewport. Panels must draw content only; they may use native Dear ImGui APIs
+  or `ui::widgets::render(root)`.
 - Layer and panel structure changes are only allowed between frames; throw
   `std::logic_error` during an active frame. `set_order`/`set_visible` follow the
   same rule.
 - If a panel throws, its window must still end, the ImGui frame must be
   discarded, and the exception must propagate. The next frame must be usable.
-- Keep `cyberverse/ui/imgui.hpp` as the only public header that includes
-  `imgui.h`. Core headers (`system.hpp`, `layer.hpp`, `panel*.hpp`,
-  `frame_stage.hpp`, `font.hpp`, `theme.hpp`) stay free of ImGui and Diligent
-  includes.
+- Keep `cyberverse/ui/imgui.hpp` as the only **entry point** header that exposes
+  `imgui.h`. Component headers under `cyberverse/ui/widgets/` include only
+  `theme.hpp`, `panel.hpp`, and standard-library headers; never ImGui, Diligent,
+  or Yoga. Layout internals live in `widgets/detail/` and may include Yoga/ImGui.
+- `ui::system` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
+  and forwards caret data to `platform::window::set_ime_caret()`; keep Windows on
+  ImGui's native IME path. `text_input` must use ImGui's committed UTF-8 text
+  path, not a custom text editor.
 - Single-threaded, render-thread only. Do not add hidden threads or
   asynchronous UI frames.
 - One process, one ImGui context, one `ui::frame_stage`.
@@ -58,6 +67,9 @@ spreading internal API use.
 - `Diligent-Imgui` comes from a DiligentEngine build with
   `DILIGENT_BUILD_TOOLS=ON` (render-core enables it by default). A missing target
   is a configure error, not a fallback.
+- Yoga is fetched at tag `v3.2.1` (`SOURCE_SUBDIR yoga`) or provided through
+  `CYBERVERSE_UI_YOGA_DIR` / an existing `yogacore` target. Keep it PRIVATE and
+  keep its license notice in `THIRD_PARTY_NOTICES.md`.
 - Use fake/headless hosts for unit tests; the default suite must not require a
   GPU or window. The real GPU smoke test is opt-in through
   `CYBERVERSE_UI_TEST_GPU=1`.
@@ -66,6 +78,6 @@ spreading internal API use.
 
 ## Dependency direction
 
-`ui` -> `runtime`, `platform`, `render-core`, Dear ImGui, DiligentEngine.
-Applications depend on `ui`; `ui` never depends on application code or the
-sandbox demo.
+`ui` -> `runtime`, `platform`, `render-core`, Dear ImGui, DiligentEngine, and
+Yoga (private implementation detail). Applications depend on `ui`; `ui` never
+depends on application code or the sandbox demo.

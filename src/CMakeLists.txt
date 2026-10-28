@@ -16,6 +16,19 @@ set(
   cyberverse/ui/font.hpp
   cyberverse/ui/theme.hpp
   cyberverse/ui/imgui.hpp
+  cyberverse/ui/widgets.hpp
+  cyberverse/ui/widgets/widget.hpp
+  cyberverse/ui/widgets/theme.hpp
+  cyberverse/ui/widgets/flexbox.hpp
+  cyberverse/ui/widgets/panel.hpp
+  cyberverse/ui/widgets/scroll_view.hpp
+  cyberverse/ui/widgets/collapse_group.hpp
+  cyberverse/ui/widgets/text.hpp
+  cyberverse/ui/widgets/button.hpp
+  cyberverse/ui/widgets/checkbox.hpp
+  cyberverse/ui/widgets/radio.hpp
+  cyberverse/ui/widgets/text_input.hpp
+  cyberverse/ui/widgets/native.hpp
 )
 
 set(
@@ -26,6 +39,10 @@ set(
   cyberverse/ui/detail/key_map.hpp
   cyberverse/ui/detail/system_impl.hpp
   cyberverse/ui/detail/z_order.hpp
+  cyberverse/ui/widgets/detail/layout_types.hpp
+  cyberverse/ui/widgets/detail/style_resolver.hpp
+  cyberverse/ui/widgets/detail/draw_utils.hpp
+  cyberverse/ui/widgets/detail/layout_engine.hpp
 )
 
 set(
@@ -36,6 +53,19 @@ set(
   cyberverse/ui/detail/input_bridge.cpp
   cyberverse/ui/detail/key_map.cpp
   cyberverse/ui/detail/z_order.cpp
+  cyberverse/ui/widgets/widget.cpp
+  cyberverse/ui/widgets/flexbox.cpp
+  cyberverse/ui/widgets/panel.cpp
+  cyberverse/ui/widgets/scroll_view.cpp
+  cyberverse/ui/widgets/collapse_group.cpp
+  cyberverse/ui/widgets/text.cpp
+  cyberverse/ui/widgets/button.cpp
+  cyberverse/ui/widgets/checkbox.cpp
+  cyberverse/ui/widgets/radio.cpp
+  cyberverse/ui/widgets/text_input.cpp
+  cyberverse/ui/widgets/native.cpp
+  cyberverse/ui/widgets/detail/style_resolver.cpp
+  cyberverse/ui/widgets/detail/layout_engine.cpp
 )
 
 target_sources(cyberverse_ui_static_lib PUBLIC ${HEADER_FILES})
@@ -54,3 +84,6 @@ target_link_libraries(
   cyberverse::render_core::static_lib
   Diligent-Imgui
 )
+
+# Yoga is an implementation detail of the widget layout layer.
+target_link_libraries(cyberverse_ui_static_lib PRIVATE yogacore)

@@ -35,6 +35,20 @@ namespace {
 
 constexpr double minimum_delta_time = 1.0 / 1000.0;
 
+#ifndef _WIN32
+void on_platform_ime_data(ImGuiContext* /*context*/, ImGuiViewport* viewport, ImGuiPlatformImeData* data) {
+  if (viewport == nullptr || data == nullptr) {
+    return;
+  }
+  auto* window = static_cast<platform::window*>(viewport->PlatformHandle);
+  if (window == nullptr) {
+    return;
+  }
+  window->set_ime_caret(
+      platform::ime_caret{ data->InputPos.x, data->InputPos.y, data->InputLineHeight, data->WantVisible });
+}
+#endif
+
 [[nodiscard]] float sanitize_scale(float value) noexcept {
   return (std::isfinite(value) && value > 0.0f) ? value : 1.0f;
 }
@@ -143,6 +157,25 @@ void system::impl::create_context() {
 
   ImGui::GetStyle().WindowMinSize = ImVec2{ 1.0f, 1.0f };
   input_.reset();
+  install_ime_hook();
+}
+
+void system::impl::install_ime_hook() {
+  if (window_ == nullptr) {
+    return;
+  }
+
+  ImGuiViewport* viewport = ImGui::GetMainViewport();
+  if (viewport == nullptr) {
+    return;
+  }
+
+  viewport->PlatformHandleRaw = window_->native_handle().window;
+  viewport->PlatformHandle = window_;
+
+#ifndef _WIN32
+  ImGui::GetPlatformIO().Platform_SetImeDataFn = &on_platform_ime_data;
+#endif
 }
 
 void system::impl::destroy_context() noexcept {

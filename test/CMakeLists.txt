@@ -20,6 +20,10 @@ add_executable(
   panel_test.cpp
   frame_stage_test.cpp
   system_test.cpp
+  widgets_test.cpp
+  widgets_interaction_test.cpp
+  widgets_containers_test.cpp
+  widgets_text_input_test.cpp
   z_order_test.cpp
 )
 

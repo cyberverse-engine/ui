@@ -15,6 +15,7 @@
 
 #include "cyberverse/ui.hpp"
 #include "cyberverse/ui/imgui.hpp"
+#include "cyberverse/ui/widgets.hpp"
 
 namespace {
 
@@ -28,5 +29,9 @@ TEST_CASE("ui public headers expose the layered model", "[ui][architecture]") {
   STATIC_REQUIRE(has_feature(panel_feature::no_input | panel_feature::transparent, panel_feature::no_input));
   STATIC_REQUIRE_FALSE(has_feature(panel_feature::transparent, panel_feature::no_input));
   STATIC_REQUIRE(std::is_abstract_v<cyberverse::ui::panel>);
+  STATIC_REQUIRE(std::is_abstract_v<cyberverse::ui::widgets::widget>);
+  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::flexbox>);
+  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::text_input>);
+  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::native>);
   SUCCEED();
 }
