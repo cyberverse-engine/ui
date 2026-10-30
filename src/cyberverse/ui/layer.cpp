@@ -34,15 +34,15 @@ void validate_name(std::string_view name) {
   }
 }
 
-void validate_panel_id(std::string_view id) {
+void validate_window_id(std::string_view id) {
   if (id.empty()) {
-    throw std::invalid_argument("cyberverse::ui::layer: a panel id must not be empty");
+    throw std::invalid_argument("cyberverse::ui::layer: a window id must not be empty");
   }
   if (id.find("###") != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::layer: a panel id must not contain \"###\"");
+    throw std::invalid_argument("cyberverse::ui::layer: a window id must not contain \"###\"");
   }
   if (id.find('/') != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::layer: a panel id must not contain '/'");
+    throw std::invalid_argument("cyberverse::ui::layer: a window id must not contain '/'");
   }
 }
 
@@ -71,44 +71,44 @@ void layer::set_visible(bool visible) {
   visible_ = visible;
 }
 
-panel& layer::add_panel(std::unique_ptr<panel> content) {
-  detail::require_between_frames("add a UI panel");
+window& layer::add_window(std::unique_ptr<window> content) {
+  detail::require_between_frames("add a UI window");
   if (content == nullptr) {
-    throw std::invalid_argument("cyberverse::ui::layer: panel must not be null");
+    throw std::invalid_argument("cyberverse::ui::layer: window must not be null");
   }
   const std::string_view id = content->id();
-  validate_panel_id(id);
-  for (const auto& existing : panels_) {
+  validate_window_id(id);
+  for (const auto& existing : windows_) {
     if (existing != nullptr && existing->id() == id) {
-      throw std::invalid_argument(std::string{ "cyberverse::ui::layer: duplicate panel id '" } + std::string{ id } +
+      throw std::invalid_argument(std::string{ "cyberverse::ui::layer: duplicate window id '" } + std::string{ id } +
                                   "'");
     }
   }
-  panels_.push_back(std::move(content));
-  return *panels_.back();
+  windows_.push_back(std::move(content));
+  return *windows_.back();
 }
 
-bool layer::remove_panel(panel& content) noexcept {
+bool layer::remove_window(window& content) noexcept {
   if (detail::frame_in_progress()) {
     return false;
   }
-  const auto iterator = std::find_if(panels_.begin(), panels_.end(), [&content](const auto& candidate) {
+  const auto iterator = std::find_if(windows_.begin(), windows_.end(), [&content](const auto& candidate) {
     return candidate.get() == &content;
   });
-  if (iterator == panels_.end()) {
+  if (iterator == windows_.end()) {
     return false;
   }
-  panels_.erase(iterator);
+  windows_.erase(iterator);
   return true;
 }
 
-void layer::clear_panels() {
-  detail::require_between_frames("clear UI panels");
-  panels_.clear();
+void layer::clear_windows() {
+  detail::require_between_frames("clear UI windows");
+  windows_.clear();
 }
 
-bool layer::has_visible_panels() const noexcept {
-  return std::any_of(panels_.begin(), panels_.end(), [](const auto& content) {
+bool layer::has_visible_windows() const noexcept {
+  return std::any_of(windows_.begin(), windows_.end(), [](const auto& content) {
     return content != nullptr && content->visible();
   });
 }

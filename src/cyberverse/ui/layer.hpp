@@ -15,7 +15,7 @@
 #include <string_view>
 #include <vector>
 
-#include "cyberverse/ui/panel.hpp"
+#include "cyberverse/ui/window.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -37,10 +37,10 @@ struct layer_desc {
 /**
  * @brief One UI layer drawn inside the shared Dear ImGui frame
  *
- * A layer only owns a name, order, visibility, and an ordered list of panels.
+ * A layer only owns a name, order, visibility, and an ordered list of windows.
  * It knows nothing about HUD, menus, diagnostics, or editor concepts. All
- * panels of a layer are managed Dear ImGui windows that fill the layer's
- * logical viewport; panel content positions itself with native Dear ImGui APIs.
+ * windows of a layer are managed Dear ImGui windows that fill the layer's
+ * logical viewport; window content positions itself with native Dear ImGui APIs.
  *
  * Layers are drawn from the lowest order to the highest; ties keep insertion
  * order. A hidden layer is not laid out and not drawn.
@@ -81,36 +81,36 @@ public:
   void set_visible(bool visible);
 
   /**
-   * @brief Add a panel to the layer
+   * @brief Add a window to the layer
    *
    * Ownership transfers to the layer. The returned reference is valid until
-   * the panel is removed or the layer is cleared.
+   * the window is removed or the layer is cleared.
    *
-   * @throws std::invalid_argument If the panel is null, its id is invalid, or
+   * @throws std::invalid_argument If the window is null, its id is invalid, or
    *         the id is already used in this layer
    * @throws std::logic_error If called during an active UI frame
    */
-  panel& add_panel(std::unique_ptr<panel> content);
+  window& add_window(std::unique_ptr<window> content);
 
   /**
-   * @brief Remove a panel owned by this layer
+   * @brief Remove a window owned by this layer
    *
-   * @return true when the panel was owned and removed
+   * @return true when the window was owned and removed
    */
-  bool remove_panel(panel& content) noexcept;
+  bool remove_window(window& content) noexcept;
 
   /**
-   * @brief Remove every panel
+   * @brief Remove every window
    *
    * @throws std::logic_error If called during an active UI frame
    */
-  void clear_panels();
+  void clear_windows();
 
   /**
-   * @brief Whether at least one panel reports visible()
+   * @brief Whether at least one window reports visible()
    *
    */
-  [[nodiscard]] bool has_visible_panels() const noexcept;
+  [[nodiscard]] bool has_visible_windows() const noexcept;
 
 private:
   friend class detail::layer_access;
@@ -118,7 +118,7 @@ private:
   std::string name_;
   int order_ = 0;
   bool visible_ = true;
-  std::vector<std::unique_ptr<panel>> panels_;
+  std::vector<std::unique_ptr<window>> windows_;
 };
 
 } // namespace ui

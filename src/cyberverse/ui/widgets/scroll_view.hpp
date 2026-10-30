@@ -1,58 +1,45 @@
 /**
  * @file scroll_view.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Vertically scrollable flexbox container
- * @version 0.4
- * @date 2026-10-28
+ * @brief Compile-time dual-axis scroll view
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
-#include <type_traits>
-#include <utility>
+#include <optional>
 
-#include "cyberverse/ui/widgets/flexbox.hpp"
+#include "cyberverse/ui/widgets/component.hpp"
+#include "cyberverse/ui/widgets/scroll_view_types.hpp"
+#include "cyberverse/ui/widgets/theme.hpp"
 
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
+namespace impl {
+template <typename... Ts>
+struct scroll_view;
+}
+
 /**
- * @brief Container with a native Dear ImGui child scroll area
+ * @brief Create a dual-axis scroll view from named child components
  *
- * The content is an internal column flexbox. A fit-content height grows to the
- * content; fixed/stretch heights keep the requested rectangle and let the native
- * child scroll vertically.
+ * Scroll offsets live in state.scroll_x and state.scroll_y.
  *
  */
-class scroll_view final : public basic_widget<scroll_view> {
-public:
-  scroll_view();
+template <component_like... Ts>
+[[nodiscard]] component<impl::scroll_view<Ts...>>
+scroll_view(state& s, scroll_options options, std::optional<scroll_view_style> style, Ts&... children);
 
-  scroll_view& direction(flex_direction value);
-  scroll_view& gap(float value);
-  scroll_view& padding(insets value);
-
-  template <typename T>
-  std::decay_t<T>& add(T&& child) {
-    return content_.add(std::forward<T>(child));
-  }
-
-  [[nodiscard]] flexbox& content() noexcept { return content_; }
-
-private:
-  friend class detail::layout_engine;
-
-  detail::measured_size measure(detail::measure_context& context, const detail::constraints& limits) override;
-  void draw(detail::draw_context& context) override;
-  void visit_children(const child_visitor& visitor) const override;
-
-  flexbox content_;
-  insets padding_{};
-};
+template <component_like... Ts>
+[[nodiscard]] component<impl::scroll_view<Ts...>> scroll_view(state& s, scroll_options options, Ts&... children);
 
 } // namespace widgets
 } // namespace ui
 } // namespace cyberverse
+
+#include "cyberverse/ui/widgets/impl/scroll_view.hpp"

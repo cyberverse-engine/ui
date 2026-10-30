@@ -78,8 +78,8 @@ private:
   [[nodiscard]] const ImWchar* ranges_for(const font_config& config);
   void update_input();
   void rebuild_draw_order();
-  [[nodiscard]] ImGuiWindowFlags window_flags(const panel& content) const;
-  void build_window_name(const layer& layer, const panel& content);
+  [[nodiscard]] ImGuiWindowFlags window_flags(const window& content) const;
+  void build_window_name(const layer& layer, const window& content);
   void abort_frame() noexcept;
   void destroy_context() noexcept;
 

@@ -1,55 +1,52 @@
 /**
  * @file text_input.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Native single-line ImGui text input
- * @version 0.4
- * @date 2026-10-28
+ * @brief widgets text input factory
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
-#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
-#include "cyberverse/ui/widgets/widget.hpp"
+#include "cyberverse/ui/widgets/component.hpp"
+#include "cyberverse/ui/widgets/impl/text_input.hpp"
+#include "cyberverse/ui/widgets/theme.hpp"
 
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
 /**
- * @brief Single-line text input backed by Dear ImGui's native InputText()
- *
- * The value is application-owned and survives widget-tree rebuilds. The widget
- * relies on the ui input bridge for committed UTF-8 text, so IME commit input
- * works through the same path as ordinary typing.
+ * @brief Options for a single-line text input
  *
  */
-class text_input final : public basic_widget<text_input> {
-public:
-  text_input(std::string id, std::string& value);
-
-  text_input& placeholder(std::string_view value);
-  text_input& password(bool enabled = true);
-  text_input& read_only(bool enabled = true);
-  text_input& on_change(std::function<void(std::string_view)> callback);
-
-private:
-  friend class detail::layout_engine;
-
-  detail::measured_size measure(detail::measure_context& context, const detail::constraints& limits) override;
-  void draw(detail::draw_context& context) override;
-  void visit_children(const child_visitor& visitor) const override;
-
-  std::string* value_ = nullptr;
-  std::string placeholder_;
-  bool password_ = false;
-  bool read_only_ = false;
-  std::function<void(std::string_view)> on_change_;
+struct text_input_options {
+  std::string_view placeholder;
+  bool password = false;
+  bool read_only = false;
 };
+
+/**
+ * @brief Create a native single-line text input backed by caller-owned text
+ *
+ */
+[[nodiscard]] inline component<impl::text_input> text_input(state& s,
+                                                            std::string& value,
+                                                            text_input_options options = {},
+                                                            std::optional<text_input_style> style = std::nullopt) {
+  return component<impl::text_input>{
+    s,
+    impl::text_input{
+        &value, std::string{ options.placeholder }, options.password, options.read_only, std::move(style) }
+  };
+}
 
 } // namespace widgets
 } // namespace ui

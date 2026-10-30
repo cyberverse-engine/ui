@@ -1,7 +1,7 @@
 /**
  * @file layer_access.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Internal read-only access to a UI layer's panel list
+ * @brief Internal read-only access to a UI layer's window list
  * @version 0.3
  * @date 2026-10-27
  *
@@ -25,8 +25,8 @@ namespace detail {
  */
 class layer_access {
 public:
-  [[nodiscard]] static const std::vector<std::unique_ptr<panel>>& panels(const layer& layer) noexcept {
-    return layer.panels_;
+  [[nodiscard]] static const std::vector<std::unique_ptr<window>>& windows(const layer& layer) noexcept {
+    return layer.windows_;
   }
 };
 

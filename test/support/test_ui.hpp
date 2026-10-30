@@ -12,6 +12,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -21,9 +22,9 @@
 #include "cyberverse/platform/platform.hpp"
 #include "cyberverse/platform/window.hpp"
 #include "cyberverse/ui/imgui.hpp"
-#include "cyberverse/ui/panel.hpp"
-#include "cyberverse/ui/panel_context.hpp"
 #include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/window.hpp"
+#include "cyberverse/ui/window_context.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -63,28 +64,30 @@ inline headless_context make_headless(int width = 640, int height = 480, bool wi
 }
 
 /**
- * @brief Recording panel used by most tests
+ * @brief Recording window used by most tests
  *
  */
-class fake_panel final : public panel {
+class fake_window final : public window {
 public:
-  std::string id_value = "test.panel";
+  std::string id_value = "test.window";
   std::string title_value;
   bool visible_value = true;
-  panel_feature feature_value = panel_feature::none;
+  window_feature feature_value = window_feature::none;
+  std::optional<rect> rect_value;
   bool throw_on_draw = false;
   int draw_count = 0;
   rect last_bounds{};
   ImVec2 last_window_pos{};
   ImVec2 last_window_size{};
-  std::function<void(panel_context&)> on_draw;
+  std::function<void(window_context&)> on_draw;
 
   [[nodiscard]] std::string_view id() const noexcept override { return id_value; }
   [[nodiscard]] std::string_view title() const noexcept override { return title_value; }
   [[nodiscard]] bool visible() const noexcept override { return visible_value; }
-  [[nodiscard]] panel_feature features() const noexcept override { return feature_value; }
+  [[nodiscard]] window_feature features() const noexcept override { return feature_value; }
+  [[nodiscard]] std::optional<rect> window_rect(const rect& /*viewport*/) const noexcept override { return rect_value; }
 
-  void draw(panel_context& context) override {
+  void draw(window_context& context) override {
     ++draw_count;
     last_bounds = context.bounds;
     last_window_pos = ImGui::GetWindowPos();
@@ -93,7 +96,7 @@ public:
       on_draw(context);
     }
     if (throw_on_draw) {
-      throw std::runtime_error("panel draw failed");
+      throw std::runtime_error("window draw failed");
     }
   }
 };

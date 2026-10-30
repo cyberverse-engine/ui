@@ -22,23 +22,23 @@
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/imgui.hpp"
 #include "cyberverse/ui/layer.hpp"
-#include "cyberverse/ui/panel.hpp"
 #include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/window.hpp"
 
 namespace {
 
 using cyberverse::ui::layer;
 using cyberverse::ui::layer_desc;
-using cyberverse::ui::panel;
-using cyberverse::ui::panel_context;
 using cyberverse::ui::system;
 using cyberverse::ui::system_config;
+using cyberverse::ui::window;
+using cyberverse::ui::window_context;
 
-class smoke_panel final : public panel {
+class smoke_window final : public window {
 public:
   [[nodiscard]] std::string_view id() const noexcept override { return "gpu.smoke"; }
 
-  void draw(panel_context& /*context*/) override { ImGui::TextUnformatted("cyberverse ui gpu smoke"); }
+  void draw(window_context& /*context*/) override { ImGui::TextUnformatted("cyberverse ui gpu smoke"); }
 };
 
 } // namespace
@@ -78,7 +78,7 @@ TEST_CASE("ui renders one overlay pass to a real swap chain", "[ui][gpu]") {
     auto ui = system::create(config);
 
     auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "gpu.layer" });
-    layer->add_panel(std::make_unique<smoke_panel>());
+    layer->add_window(std::make_unique<smoke_window>());
     ui->add_layer(std::move(layer));
 
     const auto frame = device->begin_frame(1.0 / 60.0);

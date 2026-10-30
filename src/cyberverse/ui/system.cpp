@@ -18,6 +18,7 @@
 
 #include <DeviceContext.h>
 #include <ImGuiImplDiligent.hpp>
+#include <SwapChain.h>
 
 #include "cyberverse/platform/window.hpp"
 #include "cyberverse/render_core/frame_context.hpp"
@@ -26,7 +27,7 @@
 #include "cyberverse/ui/detail/layer_access.hpp"
 #include "cyberverse/ui/detail/z_order.hpp"
 #include "cyberverse/ui/layer.hpp"
-#include "cyberverse/ui/panel_context.hpp"
+#include "cyberverse/ui/window_context.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -68,13 +69,29 @@ void on_platform_ime_data(ImGuiContext* /*context*/, ImGuiViewport* viewport, Im
 }
 
 /**
- * @brief RAII guard for one managed top-level panel window
+ * @brief RAII guard for one managed top-level window
  */
-class panel_window_scope final {
+rect sanitize_window_rect(const rect& requested, const rect& viewport) noexcept {
+  if (!std::isfinite(requested.x) || !std::isfinite(requested.y) || !std::isfinite(requested.width) ||
+      !std::isfinite(requested.height) || requested.width <= 0.0f || requested.height <= 0.0f) {
+    return viewport;
+  }
+
+  const float x = std::clamp(requested.x, 0.0f, viewport.width);
+  const float y = std::clamp(requested.y, 0.0f, viewport.height);
+  const float width = std::min(requested.width, viewport.width - x);
+  const float height = std::min(requested.height, viewport.height - y);
+  if (width <= 0.0f || height <= 0.0f) {
+    return viewport;
+  }
+  return rect{ x, y, width, height };
+}
+
+class managed_window_scope final {
 public:
-  panel_window_scope(const char* name, ImGuiWindowFlags flags, std::string_view id) {
-    ImGui::SetNextWindowPos(ImVec2{ 0.0f, 0.0f }, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
+  managed_window_scope(const char* name, ImGuiWindowFlags flags, std::string_view id, const rect& bounds) {
+    ImGui::SetNextWindowPos(ImVec2{ bounds.x, bounds.y }, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2{ bounds.width, bounds.height }, ImGuiCond_Always);
     visible_ = ImGui::Begin(name, nullptr, flags);
     if (visible_) {
       ImGui::PushID(id.data(), id.data() + id.size());
@@ -82,15 +99,15 @@ public:
     }
   }
 
-  ~panel_window_scope() {
+  ~managed_window_scope() {
     if (pushed_) {
       ImGui::PopID();
     }
     ImGui::End();
   }
 
-  panel_window_scope(const panel_window_scope&) = delete;
-  panel_window_scope& operator=(const panel_window_scope&) = delete;
+  managed_window_scope(const managed_window_scope&) = delete;
+  managed_window_scope& operator=(const managed_window_scope&) = delete;
 
   [[nodiscard]] bool visible() const noexcept { return visible_; }
 
@@ -102,7 +119,7 @@ private:
 } // namespace
 
 system::impl::impl(const system_config& config)
-    : config_{ config }, headless_{ config.headless }, device_{ config.device }, window_{ config.window } {
+    : config_{ config }, device_{ config.device }, window_{ config.window }, headless_{ config.headless } {
   if (!headless_ && (device_ == nullptr || window_ == nullptr)) {
     throw std::invalid_argument(
         "cyberverse::ui::system: a non-headless system requires both a render device and a platform window");
@@ -118,9 +135,19 @@ system::impl::impl(const system_config& config)
     apply_theme(config_.theme);
     load_fonts();
     if (!headless_) {
-      Diligent::ImGuiDiligentCreateInfo create_info{ device_->device(),
-                                                     device_->desc().color_format,
-                                                     device_->desc().depth_format };
+      // ImGui renders into the swap-chain back buffer, not into a texture
+      // created from the requested device format. Diligent may replace the
+      // requested color format with the surface-supported format (for example
+      // RGBA8 -> BGRA8 on MoltenVK), so the renderer PSO must use the actual
+      // swap-chain formats or every ImGui draw reports an RTV mismatch.
+      Diligent::TEXTURE_FORMAT color_format = device_->desc().color_format;
+      Diligent::TEXTURE_FORMAT depth_format = device_->desc().depth_format;
+      if (Diligent::ISwapChain* swap_chain = device_->swap_chain()) {
+        const Diligent::SwapChainDesc& swap_chain_desc = swap_chain->GetDesc();
+        color_format = swap_chain_desc.ColorBufferFormat;
+        depth_format = swap_chain_desc.DepthBufferFormat;
+      }
+      Diligent::ImGuiDiligentCreateInfo create_info{ device_->device(), color_format, depth_format };
       renderer_ = std::make_unique<Diligent::ImGuiDiligentRenderer>(create_info);
     }
   } catch (...) {
@@ -361,7 +388,7 @@ layer* system::impl::find_layer(std::string_view name) noexcept {
 
 bool system::impl::has_visible_content() const noexcept {
   for (const auto& layer : layers_) {
-    if (layer != nullptr && layer->visible() && layer->has_visible_panels()) {
+    if (layer != nullptr && layer->visible() && layer->has_visible_windows()) {
       return true;
     }
   }
@@ -505,35 +532,35 @@ void system::impl::rebuild_draw_order() {
   });
 }
 
-ImGuiWindowFlags system::impl::window_flags(const panel& content) const {
+ImGuiWindowFlags system::impl::window_flags(const window& content) const {
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
                            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-  const panel_feature features = content.features();
-  if (has_feature(features, panel_feature::title_bar)) {
+  const window_feature features = content.features();
+  if (has_feature(features, window_feature::title_bar)) {
     flags &= ~ImGuiWindowFlags_NoTitleBar;
   }
-  if (has_feature(features, panel_feature::scrollbar)) {
+  if (has_feature(features, window_feature::scrollbar)) {
     flags &= ~ImGuiWindowFlags_NoScrollbar;
   }
-  if (has_feature(features, panel_feature::transparent)) {
+  if (has_feature(features, window_feature::transparent)) {
     flags |= ImGuiWindowFlags_NoBackground;
   }
-  if (has_feature(features, panel_feature::no_input)) {
+  if (has_feature(features, window_feature::no_input)) {
     flags |= ImGuiWindowFlags_NoInputs;
   }
-  if (has_feature(features, panel_feature::focus_on_appearing)) {
+  if (has_feature(features, window_feature::focus_on_appearing)) {
     flags &= ~ImGuiWindowFlags_NoFocusOnAppearing;
   }
-  if (has_feature(features, panel_feature::bring_to_front_on_focus)) {
+  if (has_feature(features, window_feature::bring_to_front_on_focus)) {
     flags &= ~ImGuiWindowFlags_NoBringToFrontOnFocus;
   }
   return flags;
 }
 
-void system::impl::build_window_name(const layer& layer, const panel& content) {
+void system::impl::build_window_name(const layer& layer, const window& content) {
   const std::string_view title = content.title();
   const std::string_view id = content.id();
 
@@ -559,34 +586,34 @@ void system::impl::draw(const system& owner) {
     const ImVec2 display = io.DisplaySize;
 
     for (layer* layer : draw_order_) {
-      if (layer == nullptr || !layer->visible() || !layer->has_visible_panels()) {
+      if (layer == nullptr || !layer->visible() || !layer->has_visible_windows()) {
         continue;
       }
 
       layer_window_names_.clear();
 
-      for (auto& content : detail::layer_access::panels(*layer)) {
+      for (auto& content : detail::layer_access::windows(*layer)) {
         if (content == nullptr || !content->visible()) {
           continue;
         }
         if (content->title().find("###") != std::string_view::npos) {
-          throw std::invalid_argument("cyberverse::ui::system: a panel title must not contain \"###\"");
+          throw std::invalid_argument("cyberverse::ui::system: a window title must not contain \"###\"");
         }
 
         build_window_name(*layer, *content);
         layer_window_names_.push_back(window_name_);
 
-        panel_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id() };
+        const rect viewport{ 0.0f, 0.0f, display.x, display.y };
+        const std::optional<rect> requested = content->window_rect(viewport);
+        const rect bounds = requested.has_value() ? sanitize_window_rect(*requested, viewport) : viewport;
+        managed_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id(), bounds };
         if (scope.visible()) {
-          panel_context context{
-            owner,        *layer, rect{ 0.0f, 0.0f, display.x, display.y }, static_cast<double>(io.DeltaTime),
-            frame_index_, scale_
-          };
+          window_context context{ owner, *layer, bounds, static_cast<double>(io.DeltaTime), frame_index_, scale_ };
           content->draw(context);
         }
       }
 
-      // Raise this layer's windows in panel order so the last panel wins, then
+      // Raise this layer's windows in window order so the last window wins, then
       // continue with the next (higher) layer.
       for (const std::string& name : layer_window_names_) {
         detail::bring_window_to_front(name.c_str());

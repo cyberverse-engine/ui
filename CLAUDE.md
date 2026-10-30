@@ -1,40 +1,35 @@
 # cyberverse-ui rules
 
-`cyberverse::ui` is the Cyberverse Engine **layered UI runtime** with an optional
-standard widget layer. It hard-depends on Dear ImGui and DiligentEngine and
-privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
+`cyberverse::ui` is the Cyberverse Engine **layered UI runtime** with a
+functional widget layer. It hard-depends on Dear ImGui and DiligentEngine. It is
+not a backend-agnostic framework.
 
 ## Scope
 
 - Keep the fixed dependency set: `cyberverse::runtime::static_lib`,
   `cyberverse::platform::static_lib`,
-  `cyberverse::render_core::static_lib`, `Diligent-Imgui` (Dear ImGui), and the
-  private `yogacore` target.
+  `cyberverse::render_core::static_lib`, `Diligent-Imgui` (Dear ImGui), and
+  `cyberverse::animation::static_lib` (widget property animation).
 - There is no `ui::renderer`/backend interface, no backend selection option, and
   no fallback to another UI or rendering backend. Configure-time failure is the
   intended behavior when `Diligent-Imgui` is unavailable.
-- `ui::widgets` is the only standard component layer. It must remain a thin
-  adapter over Dear ImGui native controls; do not reimplement button, checkbox,
-  radio, text input, scrolling, or text editing.
-- `widgets2` is a separate experimental target, not a replacement for
-  `ui::widgets`. Its persistent values live in caller-owned
-  `widgets2::state`; `component<Impl>` is a static wrapper; stack/flexbox/
-  scroll-view children are references supplied by the caller. Do not add virtual
-  dispatch, `std::vector`, or dynamic child storage. The only intentional
-  `std::function` is the state event handler.
-- `widgets2` v1 includes `text`, `button`, `checkbox`, `radio`, `text_input`,
-  `divider`, `stack`, no-wrap `flexbox`, and dual-axis `scroll_view`. Flex item
-  sizing is driven by animated width/height/flex_* inputs; do not add a separate
-  layout-result (FLIP) animation layer. Explicit zero width or height must skip
-  child measurement and drawing.
-- `widgets2` must not depend on `ui::widgets`, Yoga, runtime, platform, or
+- `ui::widgets` is the only widget layer. Components are factory-created from
+  caller-owned `widgets::state`; containers hold references to named children.
+  Do not add virtual widget bases, type erasure, `std::vector` child storage, or
+  dynamic child ownership. The only intentional `std::function` is the state
+  event handler.
+- `ui::widgets` v1 includes `text`, `button`, `checkbox`, `radio`, `text_input`,
+  `divider`, `stack`, no-wrap `flexbox`, dual-axis `scroll_view`, and `box`.
+  Flex item sizing is driven by animated width/height/flex_* inputs; do not add
+  a separate layout-result (FLIP) animation layer.
+- Explicit zero width or height must skip child measurement and drawing.
+  Containers must skip zero-size children and gaps.
+- `ui::widgets` must not depend on `ui::window`, runtime, platform, or
   render-core. It may depend only on `Diligent-Imgui` and
   `cyberverse::animation::static_lib`.
-- Legacy `ui::widgets` flexbox layout comes from Yoga. Do not add anchors, grid,
-  flex-wrap, or a second layout engine to that layer. ImGui tables are not its
-  flexbox backend. `ui::widgets::stack` is only a no-wrap, content-sized
-  convenience over `flex_container`. The standalone `widgets2::flexbox` is its
-  own no-wrap implementation and is not a Yoga backend.
+- Top-level hosting is `ui::window` managed by `ui::layer` and `ui::system`.
+  A window is not a widget. It owns Dear ImGui window lifecycle, local
+  rectangles, features, input capture, z-order, and exception cleanup.
 - Do not add HUD/menu/diagnostics types or layer-level modal/capture policies;
   HUD and menu are application concepts.
 - Do not add font files, assets, or application types to the library.
@@ -47,25 +42,28 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
   overlay pass.
 - One engine frame opens at most one ImGui frame. `system::begin_frame()` /
   `draw()` / `end_frame()` are paired; a failed begin means no draw/end.
-- `ui::layer` is a UI layer: name, order, visibility, and an ordered panel
+- `ui::layer` is a UI layer: name, order, visibility, and an ordered window
   list. It is not a `runtime::frame_stage`; `ui::frame_stage` is the only
   runtime adapter.
-- Every panel is a managed Dear ImGui window that fills the layer's logical
-  viewport. Panels must draw content only; they may use native Dear ImGui APIs
-  or `ui::widgets::render(root)`.
-- Layer and panel structure changes are only allowed between frames; throw
-  `std::logic_error` during an active frame. `set_order`/`set_visible` follow the
-  same rule.
-- If a panel throws, its window must still end, the ImGui frame must be
+- Every `ui::window` is a managed Dear ImGui window that fills the layer's
+  logical viewport by default. `window::window_rect()` may request a local
+  rectangle; the system clamps it. Windows must draw content only; they may use
+  native Dear ImGui APIs or `ui::widgets::run(root, frame_context)`.
+- Layer/window structure changes are only allowed between frames; throw
+  `std::logic_error` during an active frame.
+- If a window throws, its ImGui window must still end, the ImGui frame must be
   discarded, and the exception must propagate. The next frame must be usable.
 - Keep `cyberverse/ui/imgui.hpp` as the only **entry point** header that exposes
-  `imgui.h`. Component headers under `cyberverse/ui/widgets/` include only
-  `theme.hpp`, `panel.hpp`, and standard-library headers; never ImGui, Diligent,
-  or Yoga. Layout internals live in `widgets/detail/` and may include Yoga/ImGui.
-- For the separate `widgets2` target, public component/configuration headers
-  stay ImGui-free. Only `widgets2/run.hpp`, implementation `.cpp` files, and the
-  internal `detail/font.hpp` / `detail/scroll_canvas.cpp` bridge may include
-  ImGui.
+  `imgui.h`. Public widget/configuration headers stay ImGui-free. Only
+  `widgets/run.hpp`, implementation `.cpp` files, and the internal
+  `widgets/detail/font.hpp` / `scroll_canvas.cpp` bridge may include ImGui.
+- Widgets:
+  - `state` owns id, bounds, visibility, properties, animation metadata, and the
+    event callback; it never owns the animator or child widgets.
+  - `component<Impl>` is a static wrapper; no virtual methods.
+  - `run()` order is tick → measure → set bounds → draw.
+  - Explicit zero dimensions skip implementation measure; zero bounds skip draw.
+  - `std::function` remains the one state event allocation point.
 - `ui::system` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
   and forwards caret data to `platform::window::set_ime_caret()`; keep Windows on
   ImGui's native IME path. `text_input` must use ImGui's committed UTF-8 text
@@ -85,24 +83,20 @@ spreading internal API use.
 
 - Build and test under `/tmp`, never inside the repository:
   `cmake -S . -B /tmp/cyberverse-ui-test -DCYBERVERSE_DILIGENT_DIR=<DiligentEngine>`.
-- `widgets2` is built as `cyberverse::ui::widgets2_static_lib` and resolves
-  `cyberverse::animation::static_lib` through
-  `cmake/engine_dep_animation.cmake`. It is not linked into the legacy UI target.
 - `Diligent-Imgui` comes from a DiligentEngine build with
   `DILIGENT_BUILD_TOOLS=ON` (render-core enables it by default). A missing target
   is a configure error, not a fallback.
-- Yoga is fetched at tag `v3.2.1` (`SOURCE_SUBDIR yoga`) or provided through
-  `CYBERVERSE_UI_YOGA_DIR` / an existing `yogacore` target. Keep it PRIVATE and
-  keep its license notice in `THIRD_PARTY_NOTICES.md`.
 - Use fake/headless hosts for unit tests; the default suite must not require a
   GPU or window. The real GPU smoke test is opt-in through
   `CYBERVERSE_UI_TEST_GPU=1`.
 - Format with the repository `.clang-format` (120 columns, 2-space indent).
 - README, API docs, and code comments are English.
+- `docs/roadmap.md` is Chinese.
 
 ## Dependency direction
 
-`ui` -> `runtime`, `platform`, `render-core`, Dear ImGui, DiligentEngine, and
-Yoga (private implementation detail). The separate `widgets2` target additionally
-depends on `animation` and Dear ImGui only. Applications depend on `ui`; `ui`
-never depends on application code or the sandbox demo.
+`ui` -> `runtime`, `platform`, `render-core`, `animation`, Dear ImGui, and
+DiligentEngine. `ui::widgets` is a header-only/template-facing component layer
+inside the same static library and must stay independent of the window runtime.
+Applications depend on `ui`; `ui` never depends on application code or the
+sandbox demo.

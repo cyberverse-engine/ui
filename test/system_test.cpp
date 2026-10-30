@@ -21,10 +21,10 @@ namespace {
 
 using cyberverse::ui::layer;
 using cyberverse::ui::layer_desc;
-using cyberverse::ui::panel_context;
 using cyberverse::ui::system;
 using cyberverse::ui::system_config;
-using cyberverse::ui::test::fake_panel;
+using cyberverse::ui::window_context;
+using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
 
 } // namespace
@@ -64,11 +64,11 @@ TEST_CASE("a non-headless system requires a device and window", "[ui][system]") 
 TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
   auto context = make_headless();
   auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.hud" });
-  auto content = std::make_unique<fake_panel>();
-  content->on_draw = [](panel_context&) {
+  auto content = std::make_unique<fake_window>();
+  content->on_draw = [](window_context&) {
     ImGui::TextUnformatted("cyberverse");
   };
-  layer->add_panel(std::move(content));
+  layer->add_window(std::move(content));
   context.ui->add_layer(std::move(layer));
 
   const int frame_count_before = ImGui::GetFrameCount();

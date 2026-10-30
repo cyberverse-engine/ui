@@ -4,10 +4,11 @@ Layered UI runtime for Cyberverse Engine applications. `cyberverse::ui` owns the
 single Dear ImGui context, the Diligent ImGui renderer, the input bridge, fonts,
 theme, and an ordered stack of UI layers.
 
-This is v0.4: the library hard-depends on Dear ImGui and DiligentEngine. There is
-no UI backend interface and no renderer abstraction. Every panel is still one
-managed, full-viewport ImGui window; panel content may use native Dear ImGui
-directly or the optional `ui::widgets` standard component layer.
+This is v0.5. The library hard-depends on Dear ImGui and DiligentEngine. There is
+no UI backend interface and no renderer abstraction. Every `ui::window` is a
+managed ImGui window; by default it fills the layer viewport, and a window may
+request a local rectangle for sidebars or other non-fullscreen content. Window
+content may use native Dear ImGui directly or the `ui::widgets` component layer.
 
 ## Dependencies
 
@@ -15,9 +16,7 @@ directly or the optional `ui::widgets` standard component layer.
 - `cyberverse::platform::static_lib`
 - `cyberverse::render_core::static_lib`
 - `Diligent-Imgui` (Dear ImGui, shipped through DiligentTools)
-- [Yoga](https://github.com/facebook/yoga) v3.2.1 (MIT), linked **privately** for
-  `ui::widgets` flexbox layout
-- `cyberverse::animation::static_lib` for the experimental `widgets2` target
+- `cyberverse::animation::static_lib` for widget property animation
 
 `Diligent-Imgui` is a hard requirement. If DiligentEngine is configured without
 `DILIGENT_BUILD_TOOLS=ON`, configuration fails with an actionable error instead
@@ -25,103 +24,131 @@ of falling back to another backend. Configure with
 `-DCYBERVERSE_DILIGENT_DIR=<DiligentEngine source tree>` when the sibling
 `../DiligentEngine` checkout is not present.
 
+Yoga and the legacy immediate-mode widget tree are no longer dependencies.
+
 ## Contents
 
 - `ui::system`: owns the ImGui context, Diligent renderer, fonts, theme, input
   bridge, and layer stack. One engine frame opens at most one ImGui frame.
 - `ui::layer`: one UI layer with a name, order, visibility, and an ordered
-  panel list.
-- `ui::panel` / `ui::panel_context`: one content unit and the frame information
-  passed to `draw()`.
+  window list.
+- `ui::window` / `ui::window_context`: one managed top-level window and the
+  frame information passed to `draw()`.
 - `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
   layer in one overlay pass and should be registered after all 3D stages.
-- `ui::widgets`: an optional standard component layer built on native Dear ImGui
-  controls and Yoga: flexbox, panel, scroll view, collapse group, stack, divider,
-  text, button, checkbox, radio, text input, and a native escape hatch. It is optional to use
-  from a panel but is always built with the library.
-- `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for panel
+- `ui::widgets`: the functional component layer. Components are created by
+  factories over caller-owned `widgets::state`; containers store references to
+  named children. There is no virtual widget base and no `std::vector` inside
+  widgets.
+- `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for window
   implementations and style/escape-hatch code.
-- `widgets2` (experimental): a separate, functional component library with
-  caller-owned state, compile-time stack children, no virtual dispatch, and
-  fixed-frame `run()` ordering. It is intentionally independent of the
-  Yoga-backed `widgets` layer and is not included by `ui.hpp`.
 
-## Panels and the optional widget layer
+## Windows
 
-`ui` does not force a layout model on panels. A panel's window is created by the
-layer and always fills the layer's logical viewport (`io.DisplaySize`). A panel
-can draw content inside that rectangle with native Dear ImGui APIs:
+A window is a content unit managed by a layer. The layer owns the Dear ImGui
+window; the application only paints content:
 
-- `ImGui::SetCursorPos` / `ImGui::Dummy` / `ImGui::Spacing` for positioning and
-  whitespace;
-- `ImGui::BeginChild` for auto-sized boxes;
-- `ImGui::GetBackgroundDrawList()` for a dim backdrop;
-- ordinary Dear ImGui widgets for controls.
+```cpp
+#include "cyberverse/ui.hpp"
+#include "cyberverse/ui/imgui.hpp"
 
-For applications that want a reusable, flexbox-based component layer, include
-`cyberverse/ui/widgets.hpp` and call `ui::widgets::render(root, theme)` inside the
-panel. The widget layer is deliberately thin:
+class status_window final : public cyberverse::ui::window {
+public:
+  [[nodiscard]] std::string_view id() const noexcept override { return "app.status"; }
+  [[nodiscard]] cyberverse::ui::window_feature features() const noexcept override {
+    return cyberverse::ui::window_feature::no_input;
+  }
+  void draw(cyberverse::ui::window_context& context) override {
+    ImGui::SetCursorPos(ImVec2{ 16.0f, 16.0f });
+    ImGui::TextUnformatted("Status");
+    (void)context;
+  }
+};
+```
 
-- `flexbox` uses Yoga for row/column layout, gap, padding, justify, align,
-  grow/shrink, and fit/stretch sizing;
-- `panel`, `scroll_view`, and `collapse_group` are containers;
-- `stack` is a no-wrap horizontal or vertical container whose width and height are
-  automatically sized to its content; explicit width/height can override that;
-- `divider` is a lightweight horizontal or vertical line with fixed thickness and
-  stretch/cross-axis filling;
-- `text` supports explicit newlines and automatic wrapping;
-- `button`, `checkbox`, `radio`, and `text_input` wrap Dear ImGui's native
-  controls instead of reimplementing interaction or rendering;
-- `native` gives arbitrary ImGui content (ImPlot, ImNodes, ImSpinner, custom draw
-  lists) an explicit rectangle, stable ID, and clip;
-- `theme` and per-widget `.style()` override backgrounds, borders, text colors,
-  and padding; missing values fall back to the active `ImGuiStyle`.
+The managed window fills the layer viewport by default. A window may override
+`window_rect(viewport)` to request a local rectangle; the system clamps it and
+reports it through `window_context::bounds`. Feature flags include title bar,
+scrollbar, transparent background, no input, focus on appearing, and
+bring-to-front on focus.
 
-All components support fixed width/height, fit-content, and stretch independently
-on each axis. The tree is immediate-mode and per-frame: persistent state (text
-buffers, checked values, selected radio values) is supplied by the application.
+## Widgets
+
+The widgets API is deliberately different from the legacy per-frame tree:
+
+- persistent component values live in caller-owned `widgets::state`;
+- factories return a static `component<Impl>` wrapper;
+- containers accept named lvalue children and store references;
+- `std::function` is used only by `state::on_event`;
+- `widgets::run(root, frame_context)` is the fixed frame entry.
 
 ```cpp
 #include "cyberverse/ui/widgets.hpp"
 
-void settings_panel::draw(cyberverse::ui::panel_context&) {
-  static std::string name;
-  static bool remember = true;
+widgets::state row_s{ "row" };
+widgets::state title_s{ "title" };
+widgets::state ok_s{ "ok" };
+widgets::theme appearance;
+widgets::animator animations;
 
-  ui::widgets::flexbox root;
-  root.padding({ 20, 16, 20, 16 }).gap(8);
+ok_s.on_event([](widgets::state& s, widgets::event_type event) {
+  if (event == widgets::event_type::click) {
+    s.set_visibility(widgets::visibility::invisible);
+  }
+});
 
-  auto& title = root.add(ui::widgets::flexbox{}
-                             .direction(ui::widgets::flex_direction::row)
-                             .gap(8));
-  title.add(ui::widgets::text{ "Settings" });
-  root.add(ui::widgets::text_input{ "player.name", name }
-               .placeholder("Name")
-               .width_stretch());
-  root.add(ui::widgets::checkbox{ "Remember", remember });
-  root.add(ui::widgets::button{ "Apply", [] { /* ... */ } }.width_stretch());
+auto title = widgets::text(title_s, "Settings");
+auto ok = widgets::button(ok_s, "OK");
+auto row = widgets::stack(
+    row_s,
+    {.direction = widgets::stack_direction::horizontal, .gap = 8.0f},
+    title,
+    ok);
 
-  ui::widgets::render(root);
-}
+widgets::run(row, {dt, appearance, animations});
 ```
 
-### Why not ImGui tables?
+`run()` ticks the component tree, measures, assigns bounds, draws, and advances
+the ImGui cursor. `dt` belongs to the update phase; the draw context does not
+carry time or the animator.
 
-`ImGui::BeginTable()` / `TableSetupColumn()` are excellent for tabular data,
-forms, and grids, but they are not a general flexbox: tables have no vertical
-grow/stretch, no per-row flex weights, no per-item min/max, and no layout pass
-independent of drawing. `ui::widgets` therefore uses Yoga for flexbox and leaves
-native tables available to applications. A dedicated `widgets::table` wrapper
-may be added later; it will not replace the flexbox engine.
+### Components
 
-### IME
+- `text`, `button`;
+- `checkbox`, `radio` with caller-owned bool/int values;
+- `text_input` with caller-owned `std::string`;
+- `divider` (horizontal/vertical);
+- `stack`, no-wrap `flexbox`, and `scroll_view` with simultaneous vertical and
+  horizontal scrolling;
+- `box`, a styled single-child container replacing the old `widgets::panel`.
 
-`text_input` uses Dear ImGui's committed UTF-8 text path, so CJK input works
-through the platform text callback. On non-Windows platforms `ui::system`
-installs ImGui's `Platform_SetImeDataFn` and forwards the caret rectangle to
-`platform::window::set_ime_caret()`; on Windows the native ImGui IME path uses
-`PlatformHandleRaw`. Inline preedit text and candidate-window positioning on
-macOS are not implemented yet (see `docs/roadmap.md`, M5).
+Visibility is stored in state: `visible`, `invisible` (layout retained, not
+drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`,
+`width`, and `height` are animatable float properties. Flexbox reads
+`flex_grow`, `flex_shrink`, and `flex_basis` from the child state. Layout results
+are recomputed from animated inputs; there is no separate layout-result FLIP
+layer.
+
+If an explicit width or height is zero, measurement and drawing skip the
+component's children. A container whose bounds become zero also skips child
+layout and drawing. Children with zero explicit dimensions are skipped by
+container layout.
+
+Scroll offsets are stored in `state.scroll_x` / `state.scroll_y`. Scroll views
+use a compile-time child tuple, clip content to their viewport, and overlay
+draggable horizontal/vertical scrollbars. Wheel input supports both axes;
+Shift+wheel maps vertical wheel input to horizontal scrolling.
+
+Factories accept optional full style overrides:
+
+```cpp
+widgets::button(ok_s, "Delete", widgets::button_style{
+    .background = widgets::color{0.8f, 0.2f, 0.2f, 1.0f},
+});
+```
+
+An override replaces the global theme style for that component; it is not a
+field-level merge. Without an override, `run()`'s theme is used.
 
 ## Frame lifecycle
 
@@ -132,20 +159,21 @@ macOS are not implemented yet (see `docs/roadmap.md`, M5).
    resets the scissor, calls the Diligent renderer's `NewFrame`, feeds platform
    input into ImGui, and calls `ImGui::NewFrame()`.
 4. `system::draw()` visits visible layers from the lowest order to the highest,
-   creates one fixed full-viewport ImGui window per visible panel, and calls
-   `panel::draw(context)`.
+   creates one managed ImGui window per visible window (full viewport by
+   default, or `window::window_rect()` when supplied), and calls
+   `window::draw(context)`.
 5. `system::end_frame()` calls `ImGui::Render()`, submits one
    `RenderDrawData()` pass, resets the scissor, and records
    `WantCaptureMouse` / `WantCaptureKeyboard`.
 
 `begin_frame()` returning false means no drawable frame; do not call `draw()` or
-`end_frame()`. `end_frame()` without an active frame is a no-op. Layer and panel
-structure may only change between frames; mutating it during a frame throws
-`std::logic_error`. A panel exception ends its window and discards the ImGui
-frame before propagating.
+`end_frame()`. `end_frame()` without an active frame is a no-op. Layer and
+window structure may only change between frames; mutating it during a frame
+throws `std::logic_error`. A window exception ends its window and discards the
+ImGui frame before propagating.
 
 `wants_mouse()` / `wants_keyboard()` reflect the most recently completed frame,
-so applications see one frame of latency. Hide layers or use `no_input` panels
+so applications see one frame of latency. Hide layers or use `no_input` windows
 when input must be blocked immediately.
 
 ## Ownership and threading
@@ -158,6 +186,8 @@ when input must be blocked immediately.
   asynchronous UI frames.
 - Register exactly one `ui::frame_stage`; it must render after 3D and before
   present.
+- Widget `state` objects are non-copyable/non-movable and must outlive the
+  component tree that references them.
 
 ## Layer z-order
 
@@ -169,139 +199,13 @@ internal API, overlapping layers no longer get a strict z-order guarantee;
 applications should then avoid overlapping interactive layers and control input
 through visibility and `no_input`.
 
-## Example
-
-```cpp
-#include "cyberverse/ui.hpp"
-#include "cyberverse/ui/imgui.hpp"
-
-class status_panel final : public cyberverse::ui::panel {
-public:
-  [[nodiscard]] std::string_view id() const noexcept override { return "app.status"; }
-  [[nodiscard]] cyberverse::ui::panel_feature features() const noexcept override {
-    return cyberverse::ui::panel_feature::no_input;
-  }
-  void draw(cyberverse::ui::panel_context& context) override {
-    ImGui::SetCursorPos(ImVec2{ 16.0f, 16.0f });
-    ImGui::TextUnformatted("Status");
-    (void)context;
-  }
-};
-
-cyberverse::ui::system_config config;
-config.device = &device;
-config.window = &window;
-auto ui = cyberverse::ui::system::create(config);
-
-auto layer = std::make_unique<cyberverse::ui::layer>(
-    cyberverse::ui::layer_desc{ .name = "app.status", .order = 100 });
-layer->add_panel(std::make_unique<status_panel>());
-ui->add_layer(std::move(layer));
-
-auto stage = std::make_unique<cyberverse::ui::frame_stage>(*ui, device);
-cyberverse::runtime::frame_stage_options options;
-options.render_order = 1000;
-options.receive_update = false;
-pipeline.add_stage("ui", std::move(stage), ui_clock, options);
-```
-
-## widgets2 (experimental)
-
-`ui::widgets2` is a separate static target,
-`cyberverse::ui::widgets2_static_lib`. It does not use Yoga or the old
-`widgets` tree. It is a small, functional design for fixed UI:
-
-- every persistent component value lives in a caller-owned `widgets2::state`;
-- `component<Impl>` is a static wrapper, not a polymorphic base;
-- `impl` types are hidden behind factory functions;
-- containers receive named lvalues and store references; there is no
-  `std::vector` and no ownership transfer;
-- factories return `component<Impl>` by value, so all structures stay on the
-  caller's stack;
-- the only `std::function` use is the persistent event handler in `state`.
-
-```cpp
-#include "cyberverse/ui/widgets2.hpp"
-
-widgets2::state row_s{"row"};
-widgets2::state title_s{"title"};
-widgets2::state ok_s{"ok"};
-widgets2::theme appearance;
-widgets2::animator animations;
-
-ok_s.on_event([](widgets2::state& s, widgets2::event_type event) {
-  if (event == widgets2::event_type::click) {
-    s.set_visibility(widgets2::visibility::invisible);
-  }
-});
-
-auto title = widgets2::text(title_s, "Settings");
-auto ok = widgets2::button(ok_s, "OK");
-
-auto row = widgets2::stack(
-    row_s,
-    {.direction = widgets2::stack_direction::horizontal, .gap = 8.0f},
-    title,
-    ok);
-
-widgets2::run(row, {dt, appearance, animations});
-```
-
-`run()` is the fixed frame entry: it ticks the component tree, measures,
-assigns bounds, draws, and advances the ImGui cursor. `dt` belongs to the
-update phase; the draw context does not carry time or the animator.
-
-### Components
-
-- `text`, `button`
-- `checkbox`, `radio` with caller-owned bool/int values
-- `text_input` with caller-owned `std::string`
-- `divider` (horizontal/vertical)
-- `stack` and no-wrap `flexbox`
-- `scroll_view` with simultaneous vertical and horizontal scrolling
-
-Visibility is stored in state: `visible`, `invisible` (layout retained, not
-drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`,
-`width`, and `height` are animatable float properties. Flexbox reads
-`flex_grow`, `flex_shrink`, and `flex_basis` from the child state. This is the
-input-animation model: layout results are recomputed from animated inputs;
-there is no separate layout-result FLIP layer.
-
-If an explicit width or height is zero, measurement and drawing skip the
-component's children. A container whose bounds become zero also skips child
-layout and drawing. Children with zero explicit dimensions are skipped by
-container layout.
-
-Scroll offsets are stored in `state.scroll_x` / `state.scroll_y`. A scroll view
-uses a compile-time child tuple, clips content to its viewport, and overlays
-draggable horizontal/vertical scrollbars. Wheel input supports both axes;
-Shift+wheel maps vertical wheel input to horizontal scrolling.
-
-Factories accept optional full style overrides:
-
-```cpp
-widgets2::button(ok_s, "Delete", widgets2::button_style{
-    .background = widgets2::color{0.8f, 0.2f, 0.2f, 1.0f},
-});
-```
-
-An override replaces the global theme style for that component; it is not a
-field-level merge. Without an override, `run()`'s theme is used. New components
-also read their styles from `theme` (`checkbox`, `radio`, `text_input`,
-`scroll_view`, `divider`).
-
-The target depends on Dear ImGui and `cyberverse::animation::static_lib` (for
-easing helpers). Public component headers stay ImGui-free; `run.hpp`,
-implementation `.cpp` files, and the internal scroll canvas include ImGui.
-Dynamic child lists, flex-wrap, and text wrapping are not part of this version.
-
 ## Headless mode
 
 `system_config::headless = true` creates no GPU resources. It builds the font
 atlas eagerly with a test-only texture identifier and still produces Dear ImGui
-draw data, so layer ordering, panel windows, input mapping, and exception cleanup
-can be tested without a GPU or window. A headless system may own a platform
-headless window to inject deterministic input.
+draw data, so layer ordering, windows, input mapping, and exception cleanup can
+be tested without a GPU or window. A headless system may own a platform headless
+window to inject deterministic input.
 
 ## Build and test
 
@@ -313,11 +217,6 @@ cmake -S . -B /tmp/cyberverse-ui-test \
 cmake --build /tmp/cyberverse-ui-test -j 8
 ctest --test-dir /tmp/cyberverse-ui-test --output-on-failure
 ```
-
-Yoga is fetched from `https://github.com/facebook/yoga.git` at tag `v3.2.1`
-unless an existing `yogacore` target is available. To use a local checkout, pass
-`-DCYBERVERSE_UI_YOGA_DIR=/path/to/yoga`; the configure step builds only Yoga's
-`yoga/` subdirectory. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 The default suite does not open a window or require Vulkan/MoltenVK. The real
 GPU smoke test is opt-in:

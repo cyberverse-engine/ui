@@ -74,7 +74,7 @@ struct system_config {
  * - begin_frame() returns false when no drawable frame exists; draw() and
  *   end_frame() must not be called then. end_frame() without an active frame is
  *   a no-op.
- * - Layer and panel structure may only change between frames; changing it during
+ * - Layer and window structure may only change between frames; changing it during
  *   a frame is a std::logic_error.
  * - All methods must be called from the render thread. system is not
  *   thread-safe.
@@ -131,7 +131,7 @@ public:
   [[nodiscard]] layer* find_layer(std::string_view name) noexcept;
 
   /**
-   * @brief Whether any visible layer has a visible panel
+   * @brief Whether any visible layer has a visible window
    *
    */
   [[nodiscard]] bool has_visible_content() const noexcept;

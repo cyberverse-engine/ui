@@ -2,8 +2,8 @@
  * @file architecture_test.cpp
  * @author simon2077s (simon2077s@gmail.com)
  * @brief Public header and type checks for the layered UI runtime
- * @version 0.3
- * @date 2026-10-27
+ * @version 0.4
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
@@ -20,20 +20,19 @@
 namespace {
 
 using cyberverse::ui::has_feature;
-using cyberverse::ui::panel_feature;
+using cyberverse::ui::window_feature;
 
 } // namespace
 
 TEST_CASE("ui public headers expose the layered model", "[ui][architecture]") {
-  STATIC_REQUIRE(static_cast<std::uint32_t>(panel_feature::none) == 0);
-  STATIC_REQUIRE(has_feature(panel_feature::no_input | panel_feature::transparent, panel_feature::no_input));
-  STATIC_REQUIRE_FALSE(has_feature(panel_feature::transparent, panel_feature::no_input));
-  STATIC_REQUIRE(std::is_abstract_v<cyberverse::ui::panel>);
-  STATIC_REQUIRE(std::is_abstract_v<cyberverse::ui::widgets::widget>);
-  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::flexbox>);
-  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::text_input>);
-  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::native>);
-  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::divider>);
-  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::stack>);
+  STATIC_REQUIRE(static_cast<std::uint32_t>(window_feature::none) == 0);
+  STATIC_REQUIRE(has_feature(window_feature::no_input | window_feature::transparent, window_feature::no_input));
+  STATIC_REQUIRE_FALSE(has_feature(window_feature::transparent, window_feature::no_input));
+  STATIC_REQUIRE(std::is_abstract_v<cyberverse::ui::window>);
+  STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<cyberverse::ui::widgets::state>);
+  STATIC_REQUIRE_FALSE(std::is_move_constructible_v<cyberverse::ui::widgets::state>);
+  STATIC_REQUIRE(std::is_enum_v<cyberverse::ui::widgets::property_type>);
+  STATIC_REQUIRE(std::is_standard_layout_v<cyberverse::ui::widgets::rect>);
+  STATIC_REQUIRE(std::is_class_v<cyberverse::ui::widgets::theme>);
   SUCCEED();
 }

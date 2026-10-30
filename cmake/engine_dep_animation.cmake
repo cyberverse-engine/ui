@@ -1,7 +1,7 @@
 include_guard(GLOBAL)
 include(FetchContent)
 
-# Resolve cyberverse::animation::static_lib for widgets2 animation support.
+# Resolve cyberverse::animation::static_lib for widgets animation support.
 # Resolution order mirrors the other engine dependency modules.
 function(resolve_engine_dep_animation)
   if(TARGET cyberverse::animation::static_lib)

@@ -1,42 +1,38 @@
 /**
  * @file button.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Native ImGui button adapter
- * @version 0.4
- * @date 2026-10-28
+ * @brief widgets button factory
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
-#include <functional>
-#include <string>
+#include <optional>
+#include <string_view>
+#include <utility>
 
-#include "cyberverse/ui/widgets/widget.hpp"
+#include "cyberverse/ui/widgets/component.hpp"
+#include "cyberverse/ui/widgets/impl/button.hpp"
+#include "cyberverse/ui/widgets/theme.hpp"
 
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
 /**
- * @brief Standard button backed by Dear ImGui's native Button()
+ * @brief Create a button component
+ *
+ * Click handling lives in state::on_event(event_type::click). The optional
+ * style replaces theme.button completely for this component.
  *
  */
-class button final : public basic_widget<button> {
-public:
-  explicit button(std::string label, std::function<void()> on_click = {});
-
-private:
-  friend class detail::layout_engine;
-
-  detail::measured_size measure(detail::measure_context& context, const detail::constraints& limits) override;
-  void draw(detail::draw_context& context) override;
-  void visit_children(const child_visitor& visitor) const override;
-
-  std::string label_;
-  std::function<void()> on_click_;
-};
+[[nodiscard]] inline component<impl::button>
+button(state& s, std::string_view label, std::optional<button_style> style = std::nullopt) {
+  return component<impl::button>{ s, impl::button{ label, std::move(style) } };
+}
 
 } // namespace widgets
 } // namespace ui

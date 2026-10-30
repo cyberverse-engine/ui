@@ -1,23 +1,21 @@
 /**
  * @file theme.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Widget appearance types
- * @version 0.4
- * @date 2026-10-28
+ * @brief widgets appearance configuration
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
-#include <optional>
-
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
 /**
- * @brief Straight-alpha color in the range [0, 1]
+ * @brief Straight-alpha color
  *
  */
 struct color {
@@ -28,50 +26,105 @@ struct color {
 };
 
 /**
- * @brief Solid border description
+ * @brief Text appearance
  *
  */
-struct border_style {
-  color color{};       ///< Border color
-  float width = 1.0f;  ///< Border width in logical points
-  float radius = 4.0f; ///< Corner radius in logical points
+struct text_style {
+  color text{ 0.92f, 0.94f, 0.98f, 1.0f };
 };
 
 /**
- * @brief Optional appearance overrides for one widget kind
- *
- * Every field is optional. Missing fields are inherited from the active theme,
- * then from the current Dear ImGui style. A widget-level style override uses the
- * same type and takes precedence over the theme.
+ * @brief Button appearance
  *
  */
-struct widget_style {
-  std::optional<color> background;         ///< Idle background
-  std::optional<color> background_hovered; ///< Hovered background
-  std::optional<color> background_active;  ///< Pressed background
-  std::optional<color> text;               ///< Primary text color
-  std::optional<color> text_disabled;      ///< Disabled text color
-  std::optional<border_style> border;      ///< Solid border and corner radius
-  std::optional<color> focus_ring;         ///< Keyboard focus ring color
-  std::optional<float> padding_x;          ///< Horizontal content padding
-  std::optional<float> padding_y;          ///< Vertical content padding
+struct button_style {
+  color background{ 0.18f, 0.25f, 0.34f, 1.0f };
+  color background_hovered{ 0.24f, 0.34f, 0.45f, 1.0f };
+  color background_active{ 0.30f, 0.43f, 0.57f, 1.0f };
+  color text{ 0.92f, 0.94f, 0.98f, 1.0f };
+  float padding_x = 8.0f;
+  float padding_y = 4.0f;
+  float rounding = 4.0f;
+  float border_width = 1.0f;
 };
 
 /**
- * @brief Optional appearance overrides passed to widgets::render()
+ * @brief Checkbox and radio appearance
+ *
+ */
+struct choice_style {
+  color frame{ 0.12f, 0.16f, 0.22f, 1.0f };
+  color frame_hovered{ 0.18f, 0.24f, 0.32f, 1.0f };
+  color frame_active{ 0.22f, 0.30f, 0.40f, 1.0f };
+  color border{ 0.32f, 0.40f, 0.50f, 1.0f };
+  color text{ 0.92f, 0.94f, 0.98f, 1.0f };
+  color check{ 0.42f, 0.72f, 0.94f, 1.0f };
+  float padding_x = 2.0f;
+  float padding_y = 2.0f;
+  float rounding = 3.0f;
+  float border_width = 1.0f;
+};
+
+/**
+ * @brief Single-line text input appearance
+ *
+ */
+struct text_input_style {
+  color background{ 0.10f, 0.13f, 0.18f, 1.0f };
+  color background_hovered{ 0.15f, 0.20f, 0.27f, 1.0f };
+  color background_active{ 0.19f, 0.25f, 0.34f, 1.0f };
+  color border{ 0.32f, 0.40f, 0.50f, 1.0f };
+  color text{ 0.92f, 0.94f, 0.98f, 1.0f };
+  float padding_x = 8.0f;
+  float padding_y = 4.0f;
+  float rounding = 4.0f;
+  float border_width = 1.0f;
+};
+
+/**
+ * @brief Background/border box appearance
+ *
+ */
+struct box_style {
+  color background{ 0.10f, 0.13f, 0.18f, 0.92f };
+  color border{ 0.27f, 0.38f, 0.52f, 0.55f };
+  float border_width = 1.0f;
+  float rounding = 4.0f;
+};
+
+/**
+ * @brief Scroll view frame appearance
+ *
+ */
+struct scroll_view_style {
+  color background{ 0.07f, 0.09f, 0.13f, 1.0f };
+  color border{ 0.24f, 0.30f, 0.38f, 1.0f };
+  float rounding = 4.0f;
+  float border_width = 1.0f;
+};
+
+/**
+ * @brief Divider line appearance
+ *
+ */
+struct divider_style {
+  color color{ 0.36f, 0.42f, 0.50f, 1.0f };
+};
+
+/**
+ * @brief Global appearance passed to widgets::run
  *
  */
 struct theme {
-  widget_style panel;
-  widget_style divider;
-  widget_style button;
-  widget_style checkbox;
-  widget_style radio;
-  widget_style text_input;
-  widget_style scroll_view;
-  widget_style collapse_header;
-  widget_style collapse_body;
-  widget_style text;
+  float font_size = 0.0f; ///< Base font size; 0 uses Dear ImGui's current size
+  text_style text;
+  button_style button;
+  choice_style checkbox;
+  choice_style radio;
+  text_input_style text_input;
+  box_style box;
+  scroll_view_style scroll_view;
+  divider_style divider;
 };
 
 } // namespace widgets

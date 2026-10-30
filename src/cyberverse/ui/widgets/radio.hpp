@@ -1,45 +1,36 @@
 /**
  * @file radio.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Native ImGui radio button adapter
- * @version 0.4
- * @date 2026-10-28
+ * @brief widgets radio factory
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
+#include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 
-#include "cyberverse/ui/widgets/widget.hpp"
+#include "cyberverse/ui/widgets/component.hpp"
+#include "cyberverse/ui/widgets/impl/radio.hpp"
+#include "cyberverse/ui/widgets/theme.hpp"
 
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
 /**
- * @brief Standard radio option backed by Dear ImGui's native RadioButton()
- *
- * Several radio widgets share one application-owned integer selection value. The
- * widget is selected when selected == value.
+ * @brief Create a native radio button backed by caller-owned selection
  *
  */
-class radio final : public basic_widget<radio> {
-public:
-  radio(std::string label, int& selected, int value);
-
-private:
-  friend class detail::layout_engine;
-
-  detail::measured_size measure(detail::measure_context& context, const detail::constraints& limits) override;
-  void draw(detail::draw_context& context) override;
-  void visit_children(const child_visitor& visitor) const override;
-
-  std::string label_;
-  int* selected_ = nullptr;
-  int value_ = 0;
-};
+[[nodiscard]] inline component<impl::radio>
+radio(state& s, std::string_view label, int& selected, int value, std::optional<choice_style> style = std::nullopt) {
+  return component<impl::radio>{ s, impl::radio{ std::string{ label }, &selected, value, std::move(style) } };
+}
 
 } // namespace widgets
 } // namespace ui

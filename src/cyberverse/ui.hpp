@@ -11,10 +11,10 @@
 #pragma once
 
 #include "cyberverse/ui/font.hpp"
-#include "cyberverse/ui/layer.hpp"
-#include "cyberverse/ui/panel.hpp"
-#include "cyberverse/ui/panel_context.hpp"
 #include "cyberverse/ui/frame_stage.hpp"
+#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/theme.hpp"
 #include "cyberverse/ui/widgets.hpp"
+#include "cyberverse/ui/window.hpp"
+#include "cyberverse/ui/window_context.hpp"

@@ -1,43 +1,36 @@
 /**
  * @file checkbox.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Native ImGui checkbox adapter
- * @version 0.4
- * @date 2026-10-28
+ * @brief widgets checkbox factory
+ * @version 0.1
+ * @date 2026-10-30
  *
  * @copyright Copyright (c) 2026
  *
  */
 #pragma once
 
+#include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 
-#include "cyberverse/ui/widgets/widget.hpp"
+#include "cyberverse/ui/widgets/component.hpp"
+#include "cyberverse/ui/widgets/impl/checkbox.hpp"
+#include "cyberverse/ui/widgets/theme.hpp"
 
 namespace cyberverse {
 namespace ui {
 namespace widgets {
 
 /**
- * @brief Standard checkbox backed by Dear ImGui's native Checkbox()
- *
- * The checked value is application-owned and outlives the per-frame widget tree.
+ * @brief Create a native checkbox backed by caller-owned value
  *
  */
-class checkbox final : public basic_widget<checkbox> {
-public:
-  checkbox(std::string label, bool& value);
-
-private:
-  friend class detail::layout_engine;
-
-  detail::measured_size measure(detail::measure_context& context, const detail::constraints& limits) override;
-  void draw(detail::draw_context& context) override;
-  void visit_children(const child_visitor& visitor) const override;
-
-  std::string label_;
-  bool* value_ = nullptr;
-};
+[[nodiscard]] inline component<impl::checkbox>
+checkbox(state& s, std::string_view label, bool& value, std::optional<choice_style> style = std::nullopt) {
+  return component<impl::checkbox>{ s, impl::checkbox{ std::string{ label }, &value, std::move(style) } };
+}
 
 } // namespace widgets
 } // namespace ui

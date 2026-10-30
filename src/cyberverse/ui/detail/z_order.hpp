@@ -15,7 +15,7 @@ namespace ui {
 namespace detail {
 
 /**
- * @brief Raise one managed panel window above lower windows
+ * @brief Raise one managed managed window above lower windows
  *
  * The Dear ImGui window name must be null-terminated. A missing window is
  * ignored. This is the only UI component that relies on imgui_internal.h.
