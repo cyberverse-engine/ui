@@ -214,8 +214,8 @@ pipeline.add_stage("ui", std::move(stage), ui_clock, options);
 - every persistent component value lives in a caller-owned `widgets2::state`;
 - `component<Impl>` is a static wrapper, not a polymorphic base;
 - `impl` types are hidden behind factory functions;
-- child components are passed as named lvalues and stored as references in
-  `stack<Ts...>`; there is no `std::vector` and no ownership transfer;
+- containers receive named lvalues and store references; there is no
+  `std::vector` and no ownership transfer;
 - factories return `component<Impl>` by value, so all structures stay on the
   caller's stack;
 - the only `std::function` use is the persistent event handler in `state`.
@@ -247,14 +247,35 @@ auto row = widgets2::stack(
 widgets2::run(row, {dt, appearance, animations});
 ```
 
-`run()` is the recommended fixed frame entry: it ticks the component tree,
-measures, assigns bounds, draws, and advances the ImGui cursor. `dt` belongs to
-the update phase; the draw context does not carry time or the animator.
+`run()` is the fixed frame entry: it ticks the component tree, measures,
+assigns bounds, draws, and advances the ImGui cursor. `dt` belongs to the
+update phase; the draw context does not carry time or the animator.
+
+### Components
+
+- `text`, `button`
+- `checkbox`, `radio` with caller-owned bool/int values
+- `text_input` with caller-owned `std::string`
+- `divider` (horizontal/vertical)
+- `stack` and no-wrap `flexbox`
+- `scroll_view` with simultaneous vertical and horizontal scrolling
 
 Visibility is stored in state: `visible`, `invisible` (layout retained, not
-drawn), and `collapsed` (neither layout nor draw). `opacity` and `font_size` are
-animatable float properties; `font_size` changes text/button measurement and
-layout.
+drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`,
+`width`, and `height` are animatable float properties. Flexbox reads
+`flex_grow`, `flex_shrink`, and `flex_basis` from the child state. This is the
+input-animation model: layout results are recomputed from animated inputs;
+there is no separate layout-result FLIP layer.
+
+If an explicit width or height is zero, measurement and drawing skip the
+component's children. A container whose bounds become zero also skips child
+layout and drawing. Children with zero explicit dimensions are skipped by
+container layout.
+
+Scroll offsets are stored in `state.scroll_x` / `state.scroll_y`. A scroll view
+uses a compile-time child tuple, clips content to its viewport, and overlays
+draggable horizontal/vertical scrollbars. Wheel input supports both axes;
+Shift+wheel maps vertical wheel input to horizontal scrolling.
 
 Factories accept optional full style overrides:
 
@@ -265,12 +286,14 @@ widgets2::button(ok_s, "Delete", widgets2::button_style{
 ```
 
 An override replaces the global theme style for that component; it is not a
-field-level merge. Without an override, `run()`'s theme is used.
+field-level merge. Without an override, `run()`'s theme is used. New components
+also read their styles from `theme` (`checkbox`, `radio`, `text_input`,
+`scroll_view`, `divider`).
 
 The target depends on Dear ImGui and `cyberverse::animation::static_lib` (for
-easing helpers). Only `run.hpp` and the implementation `.cpp` files include
-ImGui; component configuration headers stay ImGui-free. Dynamic child lists,
-wrapping, scrolling, and clipping are not part of this first version.
+easing helpers). Public component headers stay ImGui-free; `run.hpp`,
+implementation `.cpp` files, and the internal scroll canvas include ImGui.
+Dynamic child lists, flex-wrap, and text wrapping are not part of this version.
 
 ## Headless mode
 

@@ -56,6 +56,12 @@ float state::value(property_type property) const noexcept {
   return data.has_value ? data.current : 0.0f;
 }
 
+bool state::has_zero_dimension() const noexcept {
+  const bool zero_width = has(property_type::width) && value(property_type::width) <= 0.0f;
+  const bool zero_height = has(property_type::height) && value(property_type::height) <= 0.0f;
+  return zero_width || zero_height;
+}
+
 void state::set(property_type property, float value) noexcept {
   if (!finite(value)) {
     return;

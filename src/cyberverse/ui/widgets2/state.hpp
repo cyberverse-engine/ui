@@ -55,6 +55,13 @@ public:
   [[nodiscard]] float value(property_type property) const noexcept;
 
   /**
+   * @brief True when an explicit width or height is zero or negative
+   *
+   * Containers use this to skip child measurement and layout entirely.
+   */
+  [[nodiscard]] bool has_zero_dimension() const noexcept;
+
+  /**
    * @brief Set a property immediately, without animation
    */
   void set(property_type property, float value) noexcept;

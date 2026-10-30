@@ -27,6 +27,11 @@ enum class property_type {
   height,
   opacity,
   font_size,
+  flex_grow,
+  flex_shrink,
+  flex_basis,
+  scroll_x,
+  scroll_y,
   property_size,
 };
 

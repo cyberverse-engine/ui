@@ -18,16 +18,23 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
   radio, text input, scrolling, or text editing.
 - `widgets2` is a separate experimental target, not a replacement for
   `ui::widgets`. Its persistent values live in caller-owned
-  `widgets2::state`; `component<Impl>` is a static wrapper; stack children are
-  references supplied by the caller. Do not add virtual dispatch, `std::vector`,
-  or dynamic child storage. The only intentional `std::function` is the state
-  event handler.
+  `widgets2::state`; `component<Impl>` is a static wrapper; stack/flexbox/
+  scroll-view children are references supplied by the caller. Do not add virtual
+  dispatch, `std::vector`, or dynamic child storage. The only intentional
+  `std::function` is the state event handler.
+- `widgets2` v1 includes `text`, `button`, `checkbox`, `radio`, `text_input`,
+  `divider`, `stack`, no-wrap `flexbox`, and dual-axis `scroll_view`. Flex item
+  sizing is driven by animated width/height/flex_* inputs; do not add a separate
+  layout-result (FLIP) animation layer. Explicit zero width or height must skip
+  child measurement and drawing.
 - `widgets2` must not depend on `ui::widgets`, Yoga, runtime, platform, or
   render-core. It may depend only on `Diligent-Imgui` and
   `cyberverse::animation::static_lib`.
-- Flexbox layout comes from Yoga. Do not add anchors, grid, flex-wrap, or a second
-  layout engine. ImGui tables are not the flexbox backend. `ui::widgets::stack` is
-  only a no-wrap, content-sized convenience over `flex_container`.
+- Legacy `ui::widgets` flexbox layout comes from Yoga. Do not add anchors, grid,
+  flex-wrap, or a second layout engine to that layer. ImGui tables are not its
+  flexbox backend. `ui::widgets::stack` is only a no-wrap, content-sized
+  convenience over `flex_container`. The standalone `widgets2::flexbox` is its
+  own no-wrap implementation and is not a Yoga backend.
 - Do not add HUD/menu/diagnostics types or layer-level modal/capture policies;
   HUD and menu are application concepts.
 - Do not add font files, assets, or application types to the library.
@@ -55,9 +62,10 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
   `imgui.h`. Component headers under `cyberverse/ui/widgets/` include only
   `theme.hpp`, `panel.hpp`, and standard-library headers; never ImGui, Diligent,
   or Yoga. Layout internals live in `widgets/detail/` and may include Yoga/ImGui.
-- For the separate `widgets2` target, only `widgets2/run.hpp` and implementation
-  `.cpp` files may include ImGui; `state`, `component`, `theme`, `animator`,
-  `text`, `button`, and `stack` headers stay ImGui-free.
+- For the separate `widgets2` target, public component/configuration headers
+  stay ImGui-free. Only `widgets2/run.hpp`, implementation `.cpp` files, and the
+  internal `detail/font.hpp` / `detail/scroll_canvas.cpp` bridge may include
+  ImGui.
 - `ui::system` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
   and forwards caret data to `platform::window::set_ime_caret()`; keep Windows on
   ImGui's native IME path. `text_input` must use ImGui's committed UTF-8 text

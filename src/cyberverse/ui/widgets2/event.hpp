@@ -20,7 +20,7 @@ namespace widgets2 {
  */
 enum class event_type {
   click,
-  // Future: hover_enter, hover_leave, value_changed
+  value_changed,
 };
 
 } // namespace widgets2

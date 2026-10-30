@@ -239,27 +239,37 @@ M5 待做：
 
 设计要点：
 
-- `state` 是调用者持有的持久状态：bounds、width/height/opacity/font_size
-  属性、动画元数据和 visibility；不保存 animator 或子组件。
-- 组件由工厂创建：`text(state&, ...)`、`button(state&, ...)`、
-  `stack(state&, options, children&...)`，返回 `component<Impl>`；不公开
-  `struct button/text/stack`。
+- `state` 是调用者持有的持久状态：bounds、width/height/opacity/font_size、
+  flex_grow/flex_shrink/flex_basis、scroll_x/scroll_y 属性、动画元数据和
+  visibility；不保存 animator 或子组件。
+- 组件由工厂创建：`text`、`button`、`checkbox`、`radio`、`text_input`、
+  `divider`、`stack`、`flexbox`、`scroll_view`，返回 `component<Impl>`；不公开
+  组件实现类型。
 - `component<Impl>` 是静态包装，默认处理 visibility、opacity、measure、
   draw 和递归 tick；没有虚函数、类型擦除或 `std::vector`。
-- `stack<Ts...>` 只保存子组件引用，子项必须是有名字的左值；临时对象不能
-  作为子项。
+- 容器模板只保存子组件引用，子项必须是有名字的左值；临时对象不能作为子项。
 - 每帧推荐入口为 `run(root, frame_context{dt, theme, animator})`，固定顺序：
   tick → measure → 设置 bounds → draw。dt 只属于更新阶段，draw_context 不包含
   dt/animator。
-- `state` 的 `std::function` 事件回调是明确的分配例外；回调只在构造或修改时
-  分配。button 点击发出 `event_type::click`。
+- 采用方案 A：布局结果由动画后的 width/height/flex_* 输入重新计算，不做
+  target/visual 双 bounds 或 FLIP。
+- `state` 的 `std::function` 事件回调是明确的分配例外；button 点击发出
+  `click`，checkbox/radio/text_input 变化发出 `value_changed`。
 - `visibility` 三态：visible、invisible（布局保留、不绘制）、collapsed
-  （不布局、不绘制）；stack 跳过 collapsed 及对应 gap。
-- `opacity` 和 `font_size` 是可动画 float 属性；font_size 会改变 text/button
-  的测量和布局。
-- text/button 工厂接受可选的完整 style override；未传入时使用 `run()` 的全局
-  theme。override 是整体替换，不做字段级 merge。
-- v1 只支持编译期固定子项；动态列表、文本换行、滚动和裁剪容器后续再做。
+  （不布局、不绘制）；容器跳过 collapsed 和零尺寸子项。
+- 显式 width 或 height 为 0 时，组件跳过子项 measure/draw；bounds 任一轴为 0
+  时也跳过绘制。该规则适用于 stack/flexbox/scroll_view。
+- `stack` 是固定子项的一维排布；`flexbox` 支持 row/column、gap/padding、
+  justify、align、grow/shrink/basis，不支持 wrap。
+- `scroll_view` 同时支持横向和纵向滚动，滚动偏移存放在 state 的 scroll_x/
+  scroll_y；支持滚轮、Shift+滚轮、双滚动条和拖动。
+- `checkbox`/`radio` 使用外部 bool/int；`text_input` 使用外部 std::string；
+  三者都使用 ImGui 原生控件。
+- text/button/checkbox/radio/text_input/divider/scroll_view 工厂接受可选完整
+  style override；未传入时使用 `run()` 的全局 theme。override 是整体替换，
+  不做字段级 merge。
+- v1 只支持编译期固定子项；动态列表、flex-wrap、文本换行、虚拟滚动和
+  collapse_group 后续再做。
 
 ## 5. 帧流程
 
@@ -300,10 +310,12 @@ M5 待做：
 ### M4.1 — widgets2 实验（进行中）
 
 - 独立 target，状态外部化，工厂 + `component<Impl>`。
-- v1：theme、text、button、stack、visibility、opacity、font_size、事件回调、
+- v1：theme、text、button、checkbox、radio、text_input、divider、stack、
+  no-wrap flexbox、双轴 scroll_view、visibility/opacity/font_size、事件回调、
   `run()` 固定帧入口。
-- 已知限制：编译期固定子项、无动态列表、无滚动/裁剪、`std::function` 仅用于
-  state 事件回调。
+- 零尺寸容器跳过子项计算；布局结果采用输入动画方案 A。
+- 已知限制：编译期固定子项、无动态列表、无 flex-wrap、无文本换行、无虚拟滚动、
+  无 collapse_group、`std::function` 仅用于 state 事件回调。
 
 ### M5 — IME 与文本编辑完善（待做）
 

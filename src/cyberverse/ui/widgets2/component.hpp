@@ -25,6 +25,16 @@ namespace ui {
 namespace widgets2 {
 
 /**
+ * @brief Measure result for a component with a known-zero dimension
+ *
+ */
+[[nodiscard]] inline size zero_measure(const state& s) noexcept {
+  const float width = s.has(property_type::width) ? std::max(0.0f, s.value(property_type::width)) : 0.0f;
+  const float height = s.has(property_type::height) ? std::max(0.0f, s.value(property_type::height)) : 0.0f;
+  return size{ width, height };
+}
+
+/**
  * @brief Requirements on a component implementation type
  *
  */
@@ -59,11 +69,15 @@ public:
     if (s.get_visibility() == visibility::collapsed) {
       return size{ 0.0f, 0.0f };
     }
+    if (s.has_zero_dimension()) {
+      return zero_measure(s);
+    }
     return impl_.measure(s, th, lim);
   }
 
   void draw(draw_context& ctx) {
-    if (s.get_visibility() != visibility::visible) {
+    const rect& bounds = s.bounds();
+    if (s.get_visibility() != visibility::visible || bounds.width <= 0.0f || bounds.height <= 0.0f) {
       return;
     }
 

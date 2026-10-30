@@ -50,7 +50,7 @@ struct stack {
     std::size_t index = 0;
     std::apply(
         [&](auto&... child) {
-          ((active[index] = child.visibility_value() != visibility::collapsed,
+          ((active[index] = child.visibility_value() != visibility::collapsed && !child.s.has_zero_dimension(),
             sizes[index] = active[index] ? child.measure(th, lim) : size{},
             ++index),
            ...);
@@ -100,7 +100,7 @@ struct stack {
     std::size_t index = 0;
     std::apply(
         [&](auto&... child) {
-          ((active[index] = child.visibility_value() != visibility::collapsed,
+          ((active[index] = child.visibility_value() != visibility::collapsed && !child.s.has_zero_dimension(),
             sizes[index] =
                 active[index] ? child.measure(ctx.appearance, constraints{ bounds.width, bounds.height }) : size{},
             ++index),

@@ -100,27 +100,48 @@ target_sources(cyberverse_ui_widgets2_static_lib PUBLIC
   cyberverse/ui/widgets2.hpp
   cyberverse/ui/widgets2/animator.hpp
   cyberverse/ui/widgets2/button.hpp
+  cyberverse/ui/widgets2/checkbox.hpp
   cyberverse/ui/widgets2/component.hpp
   cyberverse/ui/widgets2/context.hpp
   cyberverse/ui/widgets2/detail/font.hpp
+  cyberverse/ui/widgets2/detail/scroll_canvas.hpp
   cyberverse/ui/widgets2/detail/state_access.hpp
+  cyberverse/ui/widgets2/divider.hpp
+  cyberverse/ui/widgets2/divider_types.hpp
   cyberverse/ui/widgets2/event.hpp
   cyberverse/ui/widgets2/impl/button.hpp
+  cyberverse/ui/widgets2/impl/divider.hpp
+  cyberverse/ui/widgets2/impl/checkbox.hpp
+  cyberverse/ui/widgets2/impl/radio.hpp
   cyberverse/ui/widgets2/impl/text.hpp
+  cyberverse/ui/widgets2/impl/text_input.hpp
+  cyberverse/ui/widgets2/impl/flexbox.hpp
+  cyberverse/ui/widgets2/flexbox.hpp
+  cyberverse/ui/widgets2/flex_types.hpp
   cyberverse/ui/widgets2/property.hpp
   cyberverse/ui/widgets2/rect.hpp
   cyberverse/ui/widgets2/run.hpp
+  cyberverse/ui/widgets2/scroll_view.hpp
+  cyberverse/ui/widgets2/scroll_view_types.hpp
   cyberverse/ui/widgets2/stack.hpp
   cyberverse/ui/widgets2/stack_types.hpp
+  cyberverse/ui/widgets2/impl/scroll_view.hpp
   cyberverse/ui/widgets2/impl/stack.hpp
   cyberverse/ui/widgets2/state.hpp
   cyberverse/ui/widgets2/text.hpp
+  cyberverse/ui/widgets2/text_input.hpp
+  cyberverse/ui/widgets2/radio.hpp
   cyberverse/ui/widgets2/theme.hpp
   cyberverse/ui/widgets2/visibility.hpp
 )
 target_sources(cyberverse_ui_widgets2_static_lib PRIVATE
   cyberverse/ui/widgets2/state.cpp
+  cyberverse/ui/widgets2/detail/scroll_canvas.cpp
+  cyberverse/ui/widgets2/impl/checkbox.cpp
+  cyberverse/ui/widgets2/impl/divider.cpp
+  cyberverse/ui/widgets2/impl/radio.cpp
   cyberverse/ui/widgets2/impl/text.cpp
+  cyberverse/ui/widgets2/impl/text_input.cpp
   cyberverse/ui/widgets2/impl/button.cpp
 )
 target_compile_features(cyberverse_ui_widgets2_static_lib PUBLIC cxx_std_23)
