@@ -17,6 +17,7 @@ directly or the optional `ui::widgets` standard component layer.
 - `Diligent-Imgui` (Dear ImGui, shipped through DiligentTools)
 - [Yoga](https://github.com/facebook/yoga) v3.2.1 (MIT), linked **privately** for
   `ui::widgets` flexbox layout
+- `cyberverse::animation::static_lib` for the experimental `widgets2` target
 
 `Diligent-Imgui` is a hard requirement. If DiligentEngine is configured without
 `DILIGENT_BUILD_TOOLS=ON`, configuration fails with an actionable error instead
@@ -40,6 +41,10 @@ of falling back to another backend. Configure with
   from a panel but is always built with the library.
 - `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for panel
   implementations and style/escape-hatch code.
+- `widgets2` (experimental): a separate, functional component library with
+  caller-owned state, compile-time stack children, no virtual dispatch, and
+  fixed-frame `run()` ordering. It is intentionally independent of the
+  Yoga-backed `widgets` layer and is not included by `ui.hpp`.
 
 ## Panels and the optional widget layer
 
@@ -199,6 +204,73 @@ options.render_order = 1000;
 options.receive_update = false;
 pipeline.add_stage("ui", std::move(stage), ui_clock, options);
 ```
+
+## widgets2 (experimental)
+
+`ui::widgets2` is a separate static target,
+`cyberverse::ui::widgets2_static_lib`. It does not use Yoga or the old
+`widgets` tree. It is a small, functional design for fixed UI:
+
+- every persistent component value lives in a caller-owned `widgets2::state`;
+- `component<Impl>` is a static wrapper, not a polymorphic base;
+- `impl` types are hidden behind factory functions;
+- child components are passed as named lvalues and stored as references in
+  `stack<Ts...>`; there is no `std::vector` and no ownership transfer;
+- factories return `component<Impl>` by value, so all structures stay on the
+  caller's stack;
+- the only `std::function` use is the persistent event handler in `state`.
+
+```cpp
+#include "cyberverse/ui/widgets2.hpp"
+
+widgets2::state row_s{"row"};
+widgets2::state title_s{"title"};
+widgets2::state ok_s{"ok"};
+widgets2::theme appearance;
+widgets2::animator animations;
+
+ok_s.on_event([](widgets2::state& s, widgets2::event_type event) {
+  if (event == widgets2::event_type::click) {
+    s.set_visibility(widgets2::visibility::invisible);
+  }
+});
+
+auto title = widgets2::text(title_s, "Settings");
+auto ok = widgets2::button(ok_s, "OK");
+
+auto row = widgets2::stack(
+    row_s,
+    {.direction = widgets2::stack_direction::horizontal, .gap = 8.0f},
+    title,
+    ok);
+
+widgets2::run(row, {dt, appearance, animations});
+```
+
+`run()` is the recommended fixed frame entry: it ticks the component tree,
+measures, assigns bounds, draws, and advances the ImGui cursor. `dt` belongs to
+the update phase; the draw context does not carry time or the animator.
+
+Visibility is stored in state: `visible`, `invisible` (layout retained, not
+drawn), and `collapsed` (neither layout nor draw). `opacity` and `font_size` are
+animatable float properties; `font_size` changes text/button measurement and
+layout.
+
+Factories accept optional full style overrides:
+
+```cpp
+widgets2::button(ok_s, "Delete", widgets2::button_style{
+    .background = widgets2::color{0.8f, 0.2f, 0.2f, 1.0f},
+});
+```
+
+An override replaces the global theme style for that component; it is not a
+field-level merge. Without an override, `run()`'s theme is used.
+
+The target depends on Dear ImGui and `cyberverse::animation::static_lib` (for
+easing helpers). Only `run.hpp` and the implementation `.cpp` files include
+ImGui; component configuration headers stay ImGui-free. Dynamic child lists,
+wrapping, scrolling, and clipping are not part of this first version.
 
 ## Headless mode
 

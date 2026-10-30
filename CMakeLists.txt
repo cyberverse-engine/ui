@@ -15,11 +15,13 @@ include(engine_dep_platform)
 include(engine_dep_runtime)
 include(engine_dep_render_core)
 include(engine_dep_yoga)
+include(engine_dep_animation)
 
 resolve_engine_dep_platform()
 resolve_engine_dep_runtime()
 resolve_engine_dep_render_core()
 resolve_engine_dep_yoga()
+resolve_engine_dep_animation()
 
 if(NOT TARGET Diligent-Imgui)
   message(FATAL_ERROR

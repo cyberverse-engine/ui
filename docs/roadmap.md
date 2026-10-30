@@ -231,6 +231,36 @@ M5 待做：
 
 ---
 
+### 4.7 `widgets2`（实验性）
+
+`widgets2` 是独立的 `cyberverse::ui::widgets2_static_lib` 目标，不依赖旧
+`widgets`、Yoga、runtime、platform 或 render-core；它只链接 Dear ImGui 和
+`animation`，用于验证新的函数式/静态组件设计。
+
+设计要点：
+
+- `state` 是调用者持有的持久状态：bounds、width/height/opacity/font_size
+  属性、动画元数据和 visibility；不保存 animator 或子组件。
+- 组件由工厂创建：`text(state&, ...)`、`button(state&, ...)`、
+  `stack(state&, options, children&...)`，返回 `component<Impl>`；不公开
+  `struct button/text/stack`。
+- `component<Impl>` 是静态包装，默认处理 visibility、opacity、measure、
+  draw 和递归 tick；没有虚函数、类型擦除或 `std::vector`。
+- `stack<Ts...>` 只保存子组件引用，子项必须是有名字的左值；临时对象不能
+  作为子项。
+- 每帧推荐入口为 `run(root, frame_context{dt, theme, animator})`，固定顺序：
+  tick → measure → 设置 bounds → draw。dt 只属于更新阶段，draw_context 不包含
+  dt/animator。
+- `state` 的 `std::function` 事件回调是明确的分配例外；回调只在构造或修改时
+  分配。button 点击发出 `event_type::click`。
+- `visibility` 三态：visible、invisible（布局保留、不绘制）、collapsed
+  （不布局、不绘制）；stack 跳过 collapsed 及对应 gap。
+- `opacity` 和 `font_size` 是可动画 float 属性；font_size 会改变 text/button
+  的测量和布局。
+- text/button 工厂接受可选的完整 style override；未传入时使用 `run()` 的全局
+  theme。override 是整体替换，不做字段级 merge。
+- v1 只支持编译期固定子项；动态列表、文本换行、滚动和裁剪容器后续再做。
+
 ## 5. 帧流程
 
 1. `ui::frame_stage::on_render` 检查 `has_visible_content()`。
@@ -266,6 +296,14 @@ M5 待做：
 - 测试：固定/fit/stretch、gap/padding、wrap、native 测量、主题、按钮/复选框/单选交互、
   scroll/collapse、CJK 输入、IME caret；
 - sandbox HUD/menu 迁移，加入文本输入、复选框、单选和原生按钮。
+
+### M4.1 — widgets2 实验（进行中）
+
+- 独立 target，状态外部化，工厂 + `component<Impl>`。
+- v1：theme、text、button、stack、visibility、opacity、font_size、事件回调、
+  `run()` 固定帧入口。
+- 已知限制：编译期固定子项、无动态列表、无滚动/裁剪、`std::function` 仅用于
+  state 事件回调。
 
 ### M5 — IME 与文本编辑完善（待做）
 

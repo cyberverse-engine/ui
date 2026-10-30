@@ -25,12 +25,14 @@ add_executable(
   widgets_containers_test.cpp
   widgets_text_input_test.cpp
   z_order_test.cpp
+  widgets2_test.cpp
 )
 
 target_link_libraries(
   cyberverse_ui_tests
   PRIVATE
   cyberverse::ui::static_lib
+  cyberverse::ui::widgets2_static_lib
   Catch2::Catch2WithMain
 )
 

@@ -90,3 +90,41 @@ target_link_libraries(
 
 # Yoga is an implementation detail of the widget layout layer.
 target_link_libraries(cyberverse_ui_static_lib PRIVATE yogacore)
+
+# Functional widgets2 library. It is intentionally separate from the legacy
+# Yoga-backed widgets target and does not depend on the old panel runtime.
+add_library(cyberverse_ui_widgets2_static_lib STATIC)
+add_library(cyberverse::ui::widgets2_static_lib ALIAS cyberverse_ui_widgets2_static_lib)
+target_include_directories(cyberverse_ui_widgets2_static_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_sources(cyberverse_ui_widgets2_static_lib PUBLIC
+  cyberverse/ui/widgets2.hpp
+  cyberverse/ui/widgets2/animator.hpp
+  cyberverse/ui/widgets2/button.hpp
+  cyberverse/ui/widgets2/component.hpp
+  cyberverse/ui/widgets2/context.hpp
+  cyberverse/ui/widgets2/detail/font.hpp
+  cyberverse/ui/widgets2/detail/state_access.hpp
+  cyberverse/ui/widgets2/event.hpp
+  cyberverse/ui/widgets2/impl/button.hpp
+  cyberverse/ui/widgets2/impl/text.hpp
+  cyberverse/ui/widgets2/property.hpp
+  cyberverse/ui/widgets2/rect.hpp
+  cyberverse/ui/widgets2/run.hpp
+  cyberverse/ui/widgets2/stack.hpp
+  cyberverse/ui/widgets2/state.hpp
+  cyberverse/ui/widgets2/text.hpp
+  cyberverse/ui/widgets2/theme.hpp
+  cyberverse/ui/widgets2/visibility.hpp
+)
+target_sources(cyberverse_ui_widgets2_static_lib PRIVATE
+  cyberverse/ui/widgets2/state.cpp
+  cyberverse/ui/widgets2/text.cpp
+  cyberverse/ui/widgets2/button.cpp
+)
+target_compile_features(cyberverse_ui_widgets2_static_lib PUBLIC cxx_std_23)
+target_link_libraries(
+  cyberverse_ui_widgets2_static_lib
+  PUBLIC
+  Diligent-Imgui
+  cyberverse::animation::static_lib
+)

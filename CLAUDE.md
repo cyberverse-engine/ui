@@ -16,6 +16,15 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
 - `ui::widgets` is the only standard component layer. It must remain a thin
   adapter over Dear ImGui native controls; do not reimplement button, checkbox,
   radio, text input, scrolling, or text editing.
+- `widgets2` is a separate experimental target, not a replacement for
+  `ui::widgets`. Its persistent values live in caller-owned
+  `widgets2::state`; `component<Impl>` is a static wrapper; stack children are
+  references supplied by the caller. Do not add virtual dispatch, `std::vector`,
+  or dynamic child storage. The only intentional `std::function` is the state
+  event handler.
+- `widgets2` must not depend on `ui::widgets`, Yoga, runtime, platform, or
+  render-core. It may depend only on `Diligent-Imgui` and
+  `cyberverse::animation::static_lib`.
 - Flexbox layout comes from Yoga. Do not add anchors, grid, flex-wrap, or a second
   layout engine. ImGui tables are not the flexbox backend. `ui::widgets::stack` is
   only a no-wrap, content-sized convenience over `flex_container`.
@@ -46,6 +55,9 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
   `imgui.h`. Component headers under `cyberverse/ui/widgets/` include only
   `theme.hpp`, `panel.hpp`, and standard-library headers; never ImGui, Diligent,
   or Yoga. Layout internals live in `widgets/detail/` and may include Yoga/ImGui.
+- For the separate `widgets2` target, only `widgets2/run.hpp` and implementation
+  `.cpp` files may include ImGui; `state`, `component`, `theme`, `animator`,
+  `text`, `button`, and `stack` headers stay ImGui-free.
 - `ui::system` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
   and forwards caret data to `platform::window::set_ime_caret()`; keep Windows on
   ImGui's native IME path. `text_input` must use ImGui's committed UTF-8 text
@@ -65,6 +77,9 @@ spreading internal API use.
 
 - Build and test under `/tmp`, never inside the repository:
   `cmake -S . -B /tmp/cyberverse-ui-test -DCYBERVERSE_DILIGENT_DIR=<DiligentEngine>`.
+- `widgets2` is built as `cyberverse::ui::widgets2_static_lib` and resolves
+  `cyberverse::animation::static_lib` through
+  `cmake/engine_dep_animation.cmake`. It is not linked into the legacy UI target.
 - `Diligent-Imgui` comes from a DiligentEngine build with
   `DILIGENT_BUILD_TOOLS=ON` (render-core enables it by default). A missing target
   is a configure error, not a fallback.
@@ -80,5 +95,6 @@ spreading internal API use.
 ## Dependency direction
 
 `ui` -> `runtime`, `platform`, `render-core`, Dear ImGui, DiligentEngine, and
-Yoga (private implementation detail). Applications depend on `ui`; `ui` never
-depends on application code or the sandbox demo.
+Yoga (private implementation detail). The separate `widgets2` target additionally
+depends on `animation` and Dear ImGui only. Applications depend on `ui`; `ui`
+never depends on application code or the sandbox demo.
