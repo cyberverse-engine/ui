@@ -118,8 +118,8 @@ target_sources(cyberverse_ui_widgets2_static_lib PUBLIC
 )
 target_sources(cyberverse_ui_widgets2_static_lib PRIVATE
   cyberverse/ui/widgets2/state.cpp
-  cyberverse/ui/widgets2/text.cpp
-  cyberverse/ui/widgets2/button.cpp
+  cyberverse/ui/widgets2/impl/text.cpp
+  cyberverse/ui/widgets2/impl/button.cpp
 )
 target_compile_features(cyberverse_ui_widgets2_static_lib PUBLIC cxx_std_23)
 target_link_libraries(
