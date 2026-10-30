@@ -30,6 +30,7 @@ set(
   cyberverse/ui/widgets/text_input.hpp
   cyberverse/ui/widgets/native.hpp
   cyberverse/ui/widgets/divider.hpp
+  cyberverse/ui/widgets/stack.hpp
 )
 
 set(

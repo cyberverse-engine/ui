@@ -35,8 +35,8 @@ of falling back to another backend. Configure with
 - `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
   layer in one overlay pass and should be registered after all 3D stages.
 - `ui::widgets`: an optional standard component layer built on native Dear ImGui
-  controls and Yoga: flexbox, panel, scroll view, collapse group, divider, text,
-  button, checkbox, radio, text input, and a native escape hatch. It is optional to use
+  controls and Yoga: flexbox, panel, scroll view, collapse group, stack, divider,
+  text, button, checkbox, radio, text input, and a native escape hatch. It is optional to use
   from a panel but is always built with the library.
 - `cyberverse/ui/imgui.hpp`: the explicit Dear ImGui entry point for panel
   implementations and style/escape-hatch code.
@@ -60,6 +60,8 @@ panel. The widget layer is deliberately thin:
 - `flexbox` uses Yoga for row/column layout, gap, padding, justify, align,
   grow/shrink, and fit/stretch sizing;
 - `panel`, `scroll_view`, and `collapse_group` are containers;
+- `stack` is a no-wrap horizontal or vertical container whose width and height are
+  automatically sized to its content; explicit width/height can override that;
 - `divider` is a lightweight horizontal or vertical line with fixed thickness and
   stretch/cross-axis filling;
 - `text` supports explicit newlines and automatic wrapping;

@@ -11,6 +11,7 @@
 #include "cyberverse/ui/widgets/flexbox.hpp"
 
 #include "cyberverse/ui/widgets/panel.hpp"
+#include "cyberverse/ui/widgets/stack.hpp"
 
 #include "cyberverse/ui/widgets/detail/layout_types.hpp"
 
@@ -38,6 +39,7 @@ void flex_container<Derived>::visit_children(const typename widget::child_visito
 
 template class flex_container<flexbox>;
 template class flex_container<panel>;
+template class flex_container<stack>;
 
 } // namespace widgets
 } // namespace ui

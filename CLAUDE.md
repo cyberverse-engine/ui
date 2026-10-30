@@ -16,8 +16,9 @@ privately links Yoga for flexbox layout. It is not a backend-agnostic framework.
 - `ui::widgets` is the only standard component layer. It must remain a thin
   adapter over Dear ImGui native controls; do not reimplement button, checkbox,
   radio, text input, scrolling, or text editing.
-- Flexbox layout comes from Yoga. Do not add anchors, stacks, grid, flex-wrap, or
-  a second layout engine. ImGui tables are not the flexbox backend.
+- Flexbox layout comes from Yoga. Do not add anchors, grid, flex-wrap, or a second
+  layout engine. ImGui tables are not the flexbox backend. `ui::widgets::stack` is
+  only a no-wrap, content-sized convenience over `flex_container`.
 - Do not add HUD/menu/diagnostics types or layer-level modal/capture policies;
   HUD and menu are application concepts.
 - Do not add font files, assets, or application types to the library.

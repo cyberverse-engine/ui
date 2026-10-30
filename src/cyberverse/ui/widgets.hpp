@@ -19,6 +19,7 @@
 #include "cyberverse/ui/widgets/panel.hpp"
 #include "cyberverse/ui/widgets/radio.hpp"
 #include "cyberverse/ui/widgets/scroll_view.hpp"
+#include "cyberverse/ui/widgets/stack.hpp"
 #include "cyberverse/ui/widgets/text.hpp"
 #include "cyberverse/ui/widgets/text_input.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"

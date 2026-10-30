@@ -40,6 +40,8 @@ using cyberverse::ui::widgets::flexbox;
 using cyberverse::ui::widgets::insets;
 using cyberverse::ui::widgets::justify_content;
 using cyberverse::ui::widgets::native;
+using cyberverse::ui::widgets::stack;
+using cyberverse::ui::widgets::stack_direction;
 using cyberverse::ui::widgets::text;
 using cyberverse::ui::widgets::theme;
 using cyberverse::ui::widgets::widget;
@@ -317,6 +319,162 @@ TEST_CASE("vertical divider stretches height minus margins", "[ui][widgets][divi
   REQUIRE(divider_rect.height == Catch::Approx(90.0f)); // 120 - 20 padding - 10 margin
   REQUIRE(divider_rect.x == Catch::Approx(root_rect.x + 10.0f));
   REQUIRE(divider_rect.y == Catch::Approx(root_rect.y + 10.0f + 6.0f));
+}
+
+TEST_CASE("stack direction defaults to vertical and can change", "[ui][widgets][stack]") {
+  stack value;
+  REQUIRE(value.direction() == stack_direction::vertical);
+  value.direction(stack_direction::horizontal);
+  REQUIRE(value.direction() == stack_direction::horizontal);
+}
+
+TEST_CASE("horizontal stack auto-sizes to its content", "[ui][widgets][stack]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.stack.horizontal");
+  widget_panel* panel_ptr = panel.get();
+
+  rect stack_rect{};
+  rect first_rect{};
+  rect second_rect{};
+  rect third_rect{};
+
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(400.0f, 200.0f);
+    auto& row = root.add(stack{ stack_direction::horizontal }.gap(10.0f).padding(insets{ 5.0f, 5.0f, 5.0f, 5.0f }));
+    auto& first = row.add(flexbox{}.size(50.0f, 20.0f));
+    auto& second = row.add(flexbox{}.size(60.0f, 30.0f));
+    auto& third = row.add(flexbox{}.size(40.0f, 10.0f));
+    cyberverse::ui::widgets::render(root);
+    stack_rect = widget_rect(row);
+    first_rect = widget_rect(first);
+    second_rect = widget_rect(second);
+    third_rect = widget_rect(third);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+
+  REQUIRE(stack_rect.width == Catch::Approx(180.0f)); // 5 + 50 + 10 + 60 + 10 + 40 + 5
+  REQUIRE(stack_rect.height == Catch::Approx(40.0f)); // 5 + max(20, 30, 10) + 5
+  REQUIRE(first_rect.x == Catch::Approx(stack_rect.x + 5.0f));
+  REQUIRE(second_rect.x == Catch::Approx(first_rect.x + 50.0f + 10.0f));
+  REQUIRE(third_rect.x == Catch::Approx(second_rect.x + 60.0f + 10.0f));
+  REQUIRE(first_rect.y == Catch::Approx(stack_rect.y + 5.0f));
+  REQUIRE(second_rect.y == Catch::Approx(stack_rect.y + 5.0f));
+  REQUIRE(third_rect.y == Catch::Approx(stack_rect.y + 5.0f));
+}
+
+TEST_CASE("vertical stack auto-sizes to its content", "[ui][widgets][stack]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.stack.vertical");
+  widget_panel* panel_ptr = panel.get();
+
+  rect stack_rect{};
+  rect first_rect{};
+  rect second_rect{};
+
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(400.0f, 300.0f);
+    auto& column = root.add(stack{ stack_direction::vertical }.gap(6.0f).padding(insets{ 5.0f, 5.0f, 5.0f, 5.0f }));
+    auto& first = column.add(flexbox{}.size(50.0f, 20.0f));
+    auto& second = column.add(flexbox{}.size(60.0f, 30.0f));
+    cyberverse::ui::widgets::render(root);
+    stack_rect = widget_rect(column);
+    first_rect = widget_rect(first);
+    second_rect = widget_rect(second);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+
+  REQUIRE(stack_rect.width == Catch::Approx(70.0f));  // 5 + max(50, 60) + 5
+  REQUIRE(stack_rect.height == Catch::Approx(66.0f)); // 5 + 20 + 6 + 30 + 5
+  REQUIRE(first_rect.x == Catch::Approx(stack_rect.x + 5.0f));
+  REQUIRE(second_rect.x == Catch::Approx(stack_rect.x + 5.0f));
+  REQUIRE(second_rect.y == Catch::Approx(first_rect.y + 20.0f + 6.0f));
+}
+
+TEST_CASE("horizontal stack never wraps children", "[ui][widgets][stack]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.stack.nowrap");
+  widget_panel* panel_ptr = panel.get();
+
+  rect first_rect{};
+  rect second_rect{};
+  rect third_rect{};
+  rect fourth_rect{};
+
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(400.0f, 200.0f);
+    auto& row = root.add(stack{ stack_direction::horizontal });
+    auto& first = row.add(flexbox{}.size(120.0f, 10.0f));
+    auto& second = row.add(flexbox{}.size(120.0f, 10.0f));
+    auto& third = row.add(flexbox{}.size(120.0f, 10.0f));
+    auto& fourth = row.add(flexbox{}.size(120.0f, 10.0f));
+    cyberverse::ui::widgets::render(root);
+    first_rect = widget_rect(first);
+    second_rect = widget_rect(second);
+    third_rect = widget_rect(third);
+    fourth_rect = widget_rect(fourth);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+
+  REQUIRE(second_rect.y == Catch::Approx(first_rect.y));
+  REQUIRE(third_rect.y == Catch::Approx(first_rect.y));
+  REQUIRE(fourth_rect.y == Catch::Approx(first_rect.y));
+  REQUIRE(second_rect.x > first_rect.x);
+  REQUIRE(third_rect.x > second_rect.x);
+  REQUIRE(fourth_rect.x > third_rect.x);
+}
+
+TEST_CASE("stack explicit dimensions override auto sizing", "[ui][widgets][stack]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.stack.override");
+  widget_panel* panel_ptr = panel.get();
+
+  rect stack_rect{};
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(400.0f, 200.0f);
+    auto& row = root.add(stack{ stack_direction::horizontal }.width(120.0f).height(30.0f));
+    cyberverse::ui::widgets::render(root);
+    stack_rect = widget_rect(row);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+  REQUIRE(stack_rect.width == Catch::Approx(120.0f));
+  REQUIRE(stack_rect.height == Catch::Approx(30.0f));
+}
+
+TEST_CASE("empty stack sizes to padding", "[ui][widgets][stack]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.stack.empty");
+  widget_panel* panel_ptr = panel.get();
+
+  rect stack_rect{};
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(400.0f, 200.0f);
+    auto& row = root.add(stack{ stack_direction::horizontal }.padding(insets{ 3.0f, 4.0f, 5.0f, 6.0f }));
+    cyberverse::ui::widgets::render(root);
+    stack_rect = widget_rect(row);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+  REQUIRE(stack_rect.width == Catch::Approx(8.0f));
+  REQUIRE(stack_rect.height == Catch::Approx(10.0f));
 }
 
 TEST_CASE("theme overrides are accepted without changing layout", "[ui][widgets][theme]") {
