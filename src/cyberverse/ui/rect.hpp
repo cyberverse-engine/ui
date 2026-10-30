@@ -1,7 +1,7 @@
 /**
  * @file rect.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Rectangle and size
+ * @brief Shared rectangle and layout size
  * @version 0.1
  * @date 2026-10-30
  *
@@ -12,7 +12,6 @@
 
 namespace cyberverse {
 namespace ui {
-namespace widgets {
 
 /**
  * @brief Rectangle in logical points
@@ -26,14 +25,13 @@ struct rect {
 };
 
 /**
- * @brief Width/height pair
+ * @brief Width/height pair used by measurement and layout
  *
  */
-struct size {
+struct layout_size {
   float width = 0.0f;
   float height = 0.0f;
 };
 
-} // namespace widgets
 } // namespace ui
 } // namespace cyberverse

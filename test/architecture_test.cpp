@@ -32,7 +32,10 @@ TEST_CASE("ui public headers expose the window model", "[ui][architecture]") {
   STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<cyberverse::ui::widgets::state>);
   STATIC_REQUIRE_FALSE(std::is_move_constructible_v<cyberverse::ui::widgets::state>);
   STATIC_REQUIRE(std::is_enum_v<cyberverse::ui::widgets::property_type>);
-  STATIC_REQUIRE(std::is_standard_layout_v<cyberverse::ui::widgets::rect>);
+  STATIC_REQUIRE(std::is_standard_layout_v<cyberverse::ui::rect>);
+  STATIC_REQUIRE(std::is_standard_layout_v<cyberverse::ui::layout_size>);
+  STATIC_REQUIRE(std::is_same_v<cyberverse::ui::rect, cyberverse::ui::widgets::rect>);
+  STATIC_REQUIRE(std::is_same_v<cyberverse::ui::layout_size, cyberverse::ui::widgets::layout_size>);
   STATIC_REQUIRE(std::is_class_v<cyberverse::ui::widgets::theme>);
   SUCCEED();
 }

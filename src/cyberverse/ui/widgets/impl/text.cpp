@@ -22,7 +22,7 @@ namespace ui {
 namespace widgets {
 namespace impl {
 
-size text::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
+layout_size text::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
   detail::font_scope font(detail::resolve_font_size(s, th));
   const ImVec2 measured = ImGui::CalcTextSize(value.data(), value.data() + value.size());
 
@@ -34,7 +34,7 @@ size text::measure(const state& s, const theme& th, const constraints& /*lim*/) 
   if (s.has(property_type::height)) {
     height = std::max(0.0f, s.value(property_type::height));
   }
-  return size{ width, height };
+  return layout_size{ width, height };
 }
 
 void text::draw(state& s, draw_context& ctx) const {

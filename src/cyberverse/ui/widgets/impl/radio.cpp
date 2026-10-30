@@ -22,7 +22,7 @@ namespace ui {
 namespace widgets {
 namespace impl {
 
-size radio::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
+layout_size radio::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
   const choice_style& style = style_override ? *style_override : th.radio;
   const detail::font_scope font(detail::resolve_font_size(s, th));
   const float frame_height = ImGui::GetFrameHeight();
@@ -37,7 +37,7 @@ size radio::measure(const state& s, const theme& th, const constraints& /*lim*/)
   if (s.has(property_type::height)) {
     height = std::max(0.0f, s.value(property_type::height));
   }
-  return size{ std::max(0.0f, width), std::max(0.0f, height) };
+  return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
 }
 
 void radio::draw(state& s, draw_context& ctx) const {

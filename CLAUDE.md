@@ -59,6 +59,10 @@ not a backend-agnostic framework.
   `widgets/detail/font.hpp` / `scroll_canvas.cpp` bridge may include ImGui.
 - Window ids are system-wide unique and must not contain `###` or `/`.
   Dear ImGui window names use `title###id`.
+- `ui::rect` and `ui::layout_size` are shared public geometry types. Windows
+  and widgets must use the same `ui::rect`; widgets may alias it as
+  `widgets::rect`. Widget `measure()` returns `ui::layout_size`; do not add a
+  second rect/size type.
 - Widgets:
   - `state` owns id, bounds, visibility, properties, animation metadata, and the
     event callback; it never owns the animator or child widgets.

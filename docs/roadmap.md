@@ -52,7 +52,16 @@ scissor。
 
 window id 在 system 内全局唯一；ImGui 窗口名为 `title###id`。
 
-### 2.3 `ui::widgets`
+### 2.3 公共几何类型
+
+`ui::rect` 和 `ui::layout_size` 位于 `src/cyberverse/ui/rect.hpp`：
+
+- window / window_context 使用同一个 `ui::rect`；
+- widgets 通过 `widgets::rect` 别名使用同一个类型；
+- 测量和布局使用 `ui::layout_size`（width/height），不再使用容易混淆的
+  `widgets::size`。
+
+### 2.4 `ui::widgets`
 
 函数式组件层：
 
@@ -72,6 +81,8 @@ widgets::run(root, {dt, theme, animator});
 ```text
 tick 输入属性 → measure → 设置 bounds → draw
 ```
+
+`measure()` 返回 `layout_size`；`state::bounds()` 使用共享 `ui::rect`。
 
 ## 3. 组件
 

@@ -15,9 +15,9 @@
 #include <utility>
 
 #include "cyberverse/ui/widgets/context.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/state.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"
 
 namespace cyberverse {
@@ -28,10 +28,10 @@ namespace widgets {
  * @brief Measure result for a component with a known-zero dimension
  *
  */
-[[nodiscard]] inline size zero_measure(const state& s) noexcept {
+[[nodiscard]] inline layout_size zero_measure(const state& s) noexcept {
   const float width = s.has(property_type::width) ? std::max(0.0f, s.value(property_type::width)) : 0.0f;
   const float height = s.has(property_type::height) ? std::max(0.0f, s.value(property_type::height)) : 0.0f;
-  return size{ width, height };
+  return layout_size{ width, height };
 }
 
 /**
@@ -40,7 +40,7 @@ namespace widgets {
  */
 template <typename Impl>
 concept impl_component = requires(Impl& impl, state& s, const theme& th, const constraints& lim, draw_context& ctx) {
-  { impl.measure(s, th, lim) } -> std::convertible_to<size>;
+  { impl.measure(s, th, lim) } -> std::convertible_to<layout_size>;
   impl.draw(s, ctx);
   impl.visit_states([](state&) {
   });
@@ -65,9 +65,9 @@ public:
 
   [[nodiscard]] visibility visibility_value() const noexcept { return s.get_visibility(); }
 
-  [[nodiscard]] size measure(const theme& th, const constraints& lim) const {
+  [[nodiscard]] layout_size measure(const theme& th, const constraints& lim) const {
     if (s.get_visibility() == visibility::collapsed) {
-      return size{ 0.0f, 0.0f };
+      return layout_size{ 0.0f, 0.0f };
     }
     if (s.has_zero_dimension()) {
       return zero_measure(s);
@@ -112,7 +112,7 @@ concept component_like =
     requires(T& c, const theme& th, const constraints& lim, draw_context& dctx, update_context& uctx) {
       { c.s } -> std::same_as<state&>;
       { c.visibility_value() } -> std::same_as<visibility>;
-      { c.measure(th, lim) } -> std::same_as<size>;
+      { c.measure(th, lim) } -> std::same_as<layout_size>;
       c.draw(dctx);
       c.tick(uctx);
     };

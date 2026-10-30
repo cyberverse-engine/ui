@@ -22,7 +22,7 @@ namespace ui {
 namespace widgets {
 namespace impl {
 
-size divider::measure(const state& s, const theme& /*th*/, const constraints& lim) const noexcept {
+layout_size divider::measure(const state& s, const theme& /*th*/, const constraints& lim) const noexcept {
   const float thickness = std::isfinite(options.thickness) ? std::max(0.0f, options.thickness) : 0.0f;
   const bool horizontal = options.orientation == divider_orientation::horizontal;
 
@@ -35,7 +35,7 @@ size divider::measure(const state& s, const theme& /*th*/, const constraints& li
   if (s.has(property_type::height)) {
     height = std::max(0.0f, s.value(property_type::height));
   }
-  return size{ width, height };
+  return layout_size{ width, height };
 }
 
 void divider::draw(state& s, draw_context& ctx) const {

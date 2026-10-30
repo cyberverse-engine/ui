@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "cyberverse/ui/widgets/rect.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 
 namespace cyberverse {
 namespace ui {

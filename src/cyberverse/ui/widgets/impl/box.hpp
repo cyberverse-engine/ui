@@ -18,9 +18,9 @@
 #include "cyberverse/ui/widgets/context.hpp"
 #include "cyberverse/ui/widgets/detail/box_canvas.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/state.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -37,8 +37,8 @@ struct box {
   std::optional<box_style> style_override;
   Child& child;
 
-  [[nodiscard]] size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
-    const size inner = child.measure(th, lim);
+  [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
+    const layout_size inner = child.measure(th, lim);
     float width = inner.width + options.padding.left + options.padding.right;
     float height = inner.height + options.padding.top + options.padding.bottom;
     if (s.has(property_type::width)) {
@@ -47,7 +47,7 @@ struct box {
     if (s.has(property_type::height)) {
       height = std::max(0.0f, s.value(property_type::height));
     }
-    return size{ std::max(0.0f, width), std::max(0.0f, height) };
+    return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
   }
 
   void draw(state& s, draw_context& ctx) const {

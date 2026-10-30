@@ -61,12 +61,12 @@ struct probe_impl {
   int* draw_count = nullptr;
   int* measure_count = nullptr;
 
-  [[nodiscard]] widgets::size
+  [[nodiscard]] widgets::layout_size
   measure(const widgets::state&, const widgets::theme&, const widgets::constraints&) const noexcept {
     if (measure_count != nullptr) {
       ++*measure_count;
     }
-    return widgets::size{ 10.0f, 10.0f };
+    return widgets::layout_size{ 10.0f, 10.0f };
   }
 
   void draw(widgets::state&, widgets::draw_context& ctx) {
@@ -171,7 +171,7 @@ TEST_CASE("widgets component applies visibility and opacity centrally", "[ui][wi
   REQUIRE(draws == 1);
 
   value.set_visibility(visibility::collapsed);
-  const widgets::size collapsed = probe.measure(appearance, widgets::constraints{});
+  const widgets::layout_size collapsed = probe.measure(appearance, widgets::constraints{});
   REQUIRE(collapsed.width == Catch::Approx(0.0f));
   REQUIRE(collapsed.height == Catch::Approx(0.0f));
 }
@@ -215,7 +215,7 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
   auto root = widgets::stack(container_s, stack_options{}, child);
 
   theme appearance;
-  const widgets::size measured = root.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
+  const widgets::layout_size measured = root.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
   REQUIRE(measured.width == Catch::Approx(0.0f));
   REQUIRE(measured.height == Catch::Approx(0.0f));
   REQUIRE(measures == 0);
@@ -234,7 +234,7 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
   state flex_zero_s{ "zero.flex" };
   flex_zero_s.set(property_type::width, 0.0f);
   auto flex_zero = widgets::flexbox(flex_zero_s, flex_options{}, child);
-  const widgets::size flex_zero_size = flex_zero.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
+  const widgets::layout_size flex_zero_size = flex_zero.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
   REQUIRE(flex_zero_size.width == Catch::Approx(0.0f));
   REQUIRE(flex_zero_size.height == Catch::Approx(0.0f));
   REQUIRE(measures == 0);
@@ -243,7 +243,7 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
   fixed_s.set(property_type::width, 0.0f);
   fixed_s.set(property_type::height, 100.0f);
   auto fixed = widgets::stack(fixed_s, stack_options{});
-  const widgets::size fixed_size = fixed.measure(appearance, widgets::constraints{});
+  const widgets::layout_size fixed_size = fixed.measure(appearance, widgets::constraints{});
   REQUIRE(fixed_size.width == Catch::Approx(0.0f));
   REQUIRE(fixed_size.height == Catch::Approx(100.0f));
 }
@@ -386,7 +386,7 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
   rect ok_bounds{};
   ImVec2 title_text_size{};
   ImVec2 ok_text_size{};
-  widgets::size plain_button_size{};
+  widgets::layout_size plain_button_size{};
 
   auto window = std::make_unique<host_window>("widgets.layout", [&](window_context&) {
     title_text_size = ImGui::CalcTextSize("Hello");
@@ -538,26 +538,26 @@ TEST_CASE("widgets divider measures along the available axis", "[ui][widgets][di
 
   auto horizontal =
       widgets::divider(divider_s, divider_options{ .orientation = divider_orientation::horizontal, .thickness = 3.0f });
-  const widgets::size horizontal_size = horizontal.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
+  const widgets::layout_size horizontal_size = horizontal.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
   REQUIRE(horizontal_size.width == Catch::Approx(200.0f));
   REQUIRE(horizontal_size.height == Catch::Approx(3.0f));
 
   divider_s.set(property_type::width, 50.0f);
-  const widgets::size explicit_size = horizontal.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
+  const widgets::layout_size explicit_size = horizontal.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
   REQUIRE(explicit_size.width == Catch::Approx(50.0f));
   REQUIRE(explicit_size.height == Catch::Approx(3.0f));
 
   state vertical_s{ "divider.vertical" };
   auto vertical =
       widgets::divider(vertical_s, divider_options{ .orientation = divider_orientation::vertical, .thickness = 2.0f });
-  const widgets::size vertical_size = vertical.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
+  const widgets::layout_size vertical_size = vertical.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
   REQUIRE(vertical_size.width == Catch::Approx(2.0f));
   REQUIRE(vertical_size.height == Catch::Approx(100.0f));
 
   state zero_s{ "divider.zero" };
   auto zero =
       widgets::divider(zero_s, divider_options{ .orientation = divider_orientation::horizontal, .thickness = 0.0f });
-  const widgets::size zero_size = zero.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
+  const widgets::layout_size zero_size = zero.measure(appearance, widgets::constraints{ 200.0f, 100.0f });
   REQUIRE(zero_size.height == Catch::Approx(0.0f));
 }
 
@@ -665,7 +665,7 @@ TEST_CASE("widgets zero-height scroll_view skips content", "[ui][widgets][scroll
   auto child = widgets::component<probe_impl>{ child_s, probe_impl{ nullptr, nullptr, &measures } };
   theme appearance;
   auto view = widgets::scroll_view(view_s, scroll_options{}, child);
-  const widgets::size measured = view.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
+  const widgets::layout_size measured = view.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
   REQUIRE(measured.width == Catch::Approx(100.0f));
   REQUIRE(measured.height == Catch::Approx(0.0f));
   REQUIRE(measures == 0);

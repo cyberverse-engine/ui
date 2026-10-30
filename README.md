@@ -33,6 +33,9 @@ Yoga and the legacy immediate-mode widget tree are no longer dependencies.
   frame.
 - `ui::window` / `ui::window_context`: one managed top-level window, its draw
   order/visibility, and the frame information passed to `draw()`.
+- `ui::rect` / `ui::layout_size`: shared geometry types. Windows and widgets use
+  the same `ui::rect`; `layout_size` is the width/height pair returned by
+  measurement and used by layout.
 - `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
   window in one overlay pass and should be registered after all 3D stages.
 - `ui::widgets`: the functional component layer. Components are created by
@@ -67,10 +70,10 @@ public:
 
 The managed window fills the system viewport by default. A window may override
 `window_rect(viewport)` to request a local rectangle; the system clamps it and
-reports it through `window_context::bounds`. Feature flags include title bar,
-scrollbar, transparent background, no input, focus on appearing, and
-bring-to-front on focus. `window::order()` controls draw order; equal orders
-keep insertion order.
+reports it through `window_context::bounds`, whose type is the shared `ui::rect`. Feature flags
+include title bar, scrollbar, transparent background, no input, focus on
+appearing, and bring-to-front on focus. `window::order()` controls draw order;
+equal orders keep insertion order.
 
 ## Widgets
 
@@ -80,7 +83,10 @@ The widgets API is deliberately different from the legacy per-frame tree:
 - factories return a static `component<Impl>` wrapper;
 - containers accept named lvalue children and store references;
 - `std::function` is used only by `state::on_event`;
-- `widgets::run(root, frame_context)` is the fixed frame entry.
+- `widgets::run(root, frame_context)` is the fixed frame entry;
+- widget `measure()` returns `ui::layout_size`;
+- `widgets::rect` and `widgets::layout_size` are aliases of the shared `ui`
+  types, not separate geometry types.
 
 ```cpp
 #include "cyberverse/ui/widgets.hpp"

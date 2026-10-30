@@ -32,7 +32,7 @@ namespace widgets {
  *
  */
 template <component_like T>
-size run(T& root, const frame_context& frame) {
+layout_size run(T& root, const frame_context& frame) {
   update_context update{ frame.dt, frame.animations };
   root.tick(update);
 
@@ -40,7 +40,7 @@ size run(T& root, const frame_context& frame) {
   const ImVec2 available = ImGui::GetContentRegionAvail();
   const constraints limits{ available.x, available.y };
 
-  const size measured = root.measure(frame.appearance, limits);
+  const layout_size measured = root.measure(frame.appearance, limits);
   const float width = std::max(0.0f, measured.width);
   const float height = std::max(0.0f, measured.height);
   detail::state_access::set_bounds(root.s, rect{ origin.x, origin.y, width, height });

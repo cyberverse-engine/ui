@@ -21,10 +21,10 @@
 #include "cyberverse/ui/widgets/context.hpp"
 #include "cyberverse/ui/widgets/detail/scroll_canvas.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/scroll_view_types.hpp"
 #include "cyberverse/ui/widgets/state.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"
 
 namespace cyberverse {
@@ -49,7 +49,7 @@ struct scroll_view {
 
   struct item {
     bool active = false;
-    size measured{};
+    layout_size measured{};
     float x = 0.0f;
     float y = 0.0f;
   };
@@ -99,7 +99,7 @@ struct scroll_view {
     return items;
   }
 
-  [[nodiscard]] size content_size(const std::array<item, child_count>& items) const noexcept {
+  [[nodiscard]] layout_size content_size(const std::array<item, child_count>& items) const noexcept {
     const bool horizontal = options.direction == scroll_content_direction::horizontal;
     float width = options.padding.left + options.padding.right;
     float height = options.padding.top + options.padding.bottom;
@@ -111,12 +111,12 @@ struct scroll_view {
       width = std::max(width, value.x + value.measured.width + options.padding.right);
       height = std::max(height, value.y + value.measured.height + options.padding.bottom);
     }
-    return size{ std::max(0.0f, width), std::max(0.0f, height) };
+    return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
   }
 
-  [[nodiscard]] size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
-    const size content = content_size(layout_items(th, lim));
-    size result = content;
+  [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
+    const layout_size content = content_size(layout_items(th, lim));
+    layout_size result = content;
     if (s.has(property_type::width)) {
       result.width = std::max(0.0f, s.value(property_type::width));
     }
@@ -134,7 +134,7 @@ struct scroll_view {
 
     const std::array<item, child_count> items =
         layout_items(ctx.appearance, constraints{ bounds.width, bounds.height });
-    const size content = content_size(items);
+    const layout_size content = content_size(items);
     const scroll_view_style& style = style_override ? *style_override : ctx.appearance.scroll_view;
     const detail::scroll_canvas canvas = detail::scroll_canvas::begin(s, style, bounds, content, options, ctx.opacity);
 

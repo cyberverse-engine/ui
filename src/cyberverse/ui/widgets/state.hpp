@@ -18,7 +18,7 @@
 #include "cyberverse/animation/easing.hpp"
 #include "cyberverse/ui/widgets/event.hpp"
 #include "cyberverse/ui/widgets/property.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"
 
 namespace cyberverse {

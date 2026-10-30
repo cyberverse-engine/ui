@@ -23,7 +23,7 @@ namespace ui {
 namespace widgets {
 namespace impl {
 
-size button::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
+layout_size button::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
   const button_style& style = style_override ? *style_override : th.button;
   const detail::font_scope font(detail::resolve_font_size(s, th));
   const ImVec2 text_size = ImGui::CalcTextSize(label.data(), label.data() + label.size());
@@ -38,7 +38,7 @@ size button::measure(const state& s, const theme& th, const constraints& /*lim*/
   if (s.has(property_type::height)) {
     height = std::max(0.0f, s.value(property_type::height));
   }
-  return size{ width, height };
+  return layout_size{ width, height };
 }
 
 void button::draw(state& s, draw_context& ctx) const {

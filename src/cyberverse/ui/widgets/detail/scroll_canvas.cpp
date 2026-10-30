@@ -40,7 +40,7 @@ void write_scroll(state& s, property_type property, float value, float maximum) 
 scroll_canvas scroll_canvas::begin(state& owner,
                                    const scroll_view_style& style,
                                    const rect& bounds,
-                                   const size& content,
+                                   const layout_size& content,
                                    const scroll_options& options,
                                    float opacity) {
   scroll_canvas result;

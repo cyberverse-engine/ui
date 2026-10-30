@@ -18,9 +18,9 @@
 #include "cyberverse/ui/widgets/component.hpp"
 #include "cyberverse/ui/widgets/context.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/stack_types.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"
 
 namespace cyberverse {
@@ -42,16 +42,16 @@ struct stack {
 
   stack(stack_options options_, std::tuple<Ts&...> children_) : options(options_), children(children_) {}
 
-  [[nodiscard]] size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
+  [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
     constexpr std::size_t count = sizeof...(Ts);
-    std::array<size, count> sizes{};
+    std::array<layout_size, count> sizes{};
     std::array<bool, count> active{};
 
     std::size_t index = 0;
     std::apply(
         [&](auto&... child) {
           ((active[index] = child.visibility_value() != visibility::collapsed && !child.s.has_zero_dimension(),
-            sizes[index] = active[index] ? child.measure(th, lim) : size{},
+            sizes[index] = active[index] ? child.measure(th, lim) : layout_size{},
             ++index),
            ...);
         },
@@ -77,7 +77,7 @@ struct stack {
     main += horizontal ? options.padding.left + options.padding.right : options.padding.top + options.padding.bottom;
     cross += horizontal ? options.padding.top + options.padding.bottom : options.padding.left + options.padding.right;
 
-    size result = horizontal ? size{ main, cross } : size{ cross, main };
+    layout_size result = horizontal ? layout_size{ main, cross } : layout_size{ cross, main };
     if (s.has(property_type::width)) {
       result.width = std::max(0.0f, s.value(property_type::width));
     }
@@ -94,15 +94,15 @@ struct stack {
     }
 
     constexpr std::size_t count = sizeof...(Ts);
-    std::array<size, count> sizes{};
+    std::array<layout_size, count> sizes{};
     std::array<bool, count> active{};
 
     std::size_t index = 0;
     std::apply(
         [&](auto&... child) {
           ((active[index] = child.visibility_value() != visibility::collapsed && !child.s.has_zero_dimension(),
-            sizes[index] =
-                active[index] ? child.measure(ctx.appearance, constraints{ bounds.width, bounds.height }) : size{},
+            sizes[index] = active[index] ? child.measure(ctx.appearance, constraints{ bounds.width, bounds.height })
+                                         : layout_size{},
             ++index),
            ...);
         },
@@ -135,7 +135,7 @@ struct stack {
 private:
   template <typename Child>
   static void draw_one(Child& child,
-                       const size& child_size,
+                       const layout_size& child_size,
                        bool is_active,
                        bool horizontal,
                        float gap,

@@ -23,7 +23,7 @@ namespace ui {
 namespace widgets {
 namespace impl {
 
-size text_input::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
+layout_size text_input::measure(const state& s, const theme& th, const constraints& /*lim*/) const noexcept {
   const text_input_style& style = style_override ? *style_override : th.text_input;
   const detail::font_scope font(detail::resolve_font_size(s, th));
   const char* shown = value != nullptr && !value->empty() ? value->c_str() : placeholder.c_str();
@@ -38,7 +38,7 @@ size text_input::measure(const state& s, const theme& th, const constraints& /*l
   if (s.has(property_type::height)) {
     height = std::max(0.0f, s.value(property_type::height));
   }
-  return size{ std::max(0.0f, width), std::max(0.0f, height) };
+  return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
 }
 
 void text_input::draw(state& s, draw_context& ctx) const {

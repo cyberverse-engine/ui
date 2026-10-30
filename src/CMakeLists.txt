@@ -15,6 +15,7 @@ set(
   cyberverse/ui/font.hpp
   cyberverse/ui/theme.hpp
   cyberverse/ui/imgui.hpp
+  cyberverse/ui/rect.hpp
   cyberverse/ui/widgets.hpp
   cyberverse/ui/widgets/animator.hpp
   cyberverse/ui/widgets/box.hpp
@@ -30,7 +31,6 @@ set(
   cyberverse/ui/widgets/flexbox.hpp
   cyberverse/ui/widgets/property.hpp
   cyberverse/ui/widgets/radio.hpp
-  cyberverse/ui/widgets/rect.hpp
   cyberverse/ui/widgets/run.hpp
   cyberverse/ui/widgets/scroll_view.hpp
   cyberverse/ui/widgets/scroll_view_types.hpp
@@ -40,6 +40,7 @@ set(
   cyberverse/ui/widgets/text.hpp
   cyberverse/ui/widgets/text_input.hpp
   cyberverse/ui/widgets/theme.hpp
+  cyberverse/ui/widgets/types.hpp
   cyberverse/ui/widgets/visibility.hpp
 )
 

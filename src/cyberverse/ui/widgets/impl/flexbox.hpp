@@ -19,9 +19,9 @@
 #include "cyberverse/ui/widgets/context.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
 #include "cyberverse/ui/widgets/flex_types.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/state.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"
 
 namespace cyberverse {
@@ -60,7 +60,7 @@ struct flexbox {
       return result;
     }
 
-    const size measured = child.measure(th, lim);
+    const layout_size measured = child.measure(th, lim);
     const bool horizontal = options.direction == flex_direction::row;
     const property_type main_property = horizontal ? property_type::width : property_type::height;
     const property_type cross_property = horizontal ? property_type::height : property_type::width;
@@ -95,7 +95,7 @@ struct flexbox {
     return items;
   }
 
-  [[nodiscard]] size content_size(const std::array<item, child_count>& items) const noexcept {
+  [[nodiscard]] layout_size content_size(const std::array<item, child_count>& items) const noexcept {
     const bool horizontal = options.direction == flex_direction::row;
     float main = 0.0f;
     float cross = 0.0f;
@@ -115,12 +115,12 @@ struct flexbox {
 
     main += horizontal ? options.padding.left + options.padding.right : options.padding.top + options.padding.bottom;
     cross += horizontal ? options.padding.top + options.padding.bottom : options.padding.left + options.padding.right;
-    return horizontal ? size{ main, cross } : size{ cross, main };
+    return horizontal ? layout_size{ main, cross } : layout_size{ cross, main };
   }
 
-  [[nodiscard]] size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
+  [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept {
     const std::array<item, child_count> items = collect(th, lim);
-    size result = content_size(items);
+    layout_size result = content_size(items);
 
     if (s.has(property_type::width)) {
       result.width = std::max(0.0f, s.value(property_type::width));

@@ -14,22 +14,10 @@
 #include <optional>
 #include <string_view>
 
+#include "cyberverse/ui/rect.hpp"
+
 namespace cyberverse {
 namespace ui {
-
-/**
- * @brief Rectangle in logical points
- *
- * The origin is the top-left corner of the window content area and +Y points
- * down.
- *
- */
-struct rect {
-  float x = 0.0f;
-  float y = 0.0f;
-  float width = 0.0f;
-  float height = 0.0f;
-};
 
 /**
  * @brief Positive window features for one window

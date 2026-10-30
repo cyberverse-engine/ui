@@ -31,7 +31,7 @@ struct checkbox {
   bool* value = nullptr;
   std::optional<choice_style> style_override;
 
-  [[nodiscard]] size measure(const state& s, const theme& th, const constraints& lim) const noexcept;
+  [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept;
   void draw(state& s, draw_context& ctx) const;
   template <typename F>
   void visit_states(F&& /*visitor*/) const noexcept {}

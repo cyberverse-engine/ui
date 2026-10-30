@@ -11,10 +11,10 @@
 #pragma once
 
 #include "cyberverse/ui/widgets/context.hpp"
-#include "cyberverse/ui/widgets/rect.hpp"
 #include "cyberverse/ui/widgets/scroll_view_types.hpp"
 #include "cyberverse/ui/widgets/state.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -34,7 +34,7 @@ struct scroll_canvas {
   static scroll_canvas begin(state& owner,
                              const scroll_view_style& style,
                              const rect& bounds,
-                             const size& content,
+                             const layout_size& content,
                              const scroll_options& options,
                              float opacity);
 
@@ -49,7 +49,7 @@ private:
   state* owner_ = nullptr;
   const scroll_view_style* style_ = nullptr;
   rect bounds_{};
-  size content_{};
+  layout_size content_{};
   float opacity_ = 1.0f;
   float max_scroll_x_ = 0.0f;
   float max_scroll_y_ = 0.0f;
