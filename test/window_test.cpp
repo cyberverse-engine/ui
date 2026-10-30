@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2026
  *
  */
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <memory>
@@ -167,6 +168,31 @@ TEST_CASE("a throwing window cleans up the frame and the next frame recovers", "
   content.throw_on_draw = false;
   render(*context.ui);
   REQUIRE(content.draw_count == 2);
+}
+
+TEST_CASE("window context preserves the logical frame delta", "[ui][window][clock]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  fake_window& content = add_fake(*context.ui, "test.clock");
+  double observed_delta = -1.0;
+  content.on_draw = [&observed_delta](window_context& window_context) {
+    observed_delta = window_context.delta_time;
+  };
+
+  REQUIRE(context.ui->begin_frame(width, height, 0.25));
+  context.ui->draw();
+  context.ui->end_frame();
+  REQUIRE(observed_delta == Catch::Approx(0.25));
+
+  REQUIRE(context.ui->begin_frame(width, height, 0.0));
+  context.ui->draw();
+  context.ui->end_frame();
+  REQUIRE(observed_delta == Catch::Approx(0.0));
+  REQUIRE(ImGui::GetIO().DeltaTime > 0.0f);
+
+  REQUIRE(context.ui->begin_frame(width, height, -1.0));
+  context.ui->draw();
+  context.ui->end_frame();
+  REQUIRE(observed_delta == Catch::Approx(0.0));
 }
 
 TEST_CASE("window names stay stable when the title changes", "[ui][window]") {

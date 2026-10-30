@@ -110,6 +110,7 @@ private:
   float display_width_ = 0.0f;
   float display_height_ = 0.0f;
   std::uint64_t frame_index_ = 0;
+  double frame_delta_ = 0.0;
 };
 
 } // namespace ui

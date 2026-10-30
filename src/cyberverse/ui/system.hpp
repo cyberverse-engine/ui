@@ -144,7 +144,9 @@ public:
    * context and color target in the non-headless mode.
    *
    * @param frame Render frame context; must outlive the frame
-   * @param delta_time Frame delta in seconds
+   * @param delta_time Effective logical frame delta in seconds; non-positive
+   *        values are reported as zero to windows while Dear ImGui receives a
+   *        minimum positive delta
    * @return true when a frame started
    * @return false when no drawable frame exists or a frame is already active
    */
@@ -157,7 +159,9 @@ public:
    *
    * @param display_width Logical width in points; must be positive
    * @param display_height Logical height in points; must be positive
-   * @param delta_time Frame delta in seconds
+   * @param delta_time Effective logical frame delta in seconds; non-positive
+   *        values are reported as zero to windows while Dear ImGui receives a
+   *        minimum positive delta
    * @return true when a frame started
    */
   bool begin_frame(float display_width, float display_height, double delta_time);

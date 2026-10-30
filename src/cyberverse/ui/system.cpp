@@ -459,6 +459,8 @@ bool system::impl::begin_frame(const render_core::frame_context& frame, double d
   ImGuiIO& io = ImGui::GetIO();
   io.DisplaySize = ImVec2{ logical_width, logical_height };
   io.DisplayFramebufferScale = ImVec2{ scale_, scale_ };
+  frame_delta_ = (std::isfinite(delta_time) && delta_time > 0.0) ? delta_time : 0.0;
+  // Dear ImGui requires a positive delta; keep the logical zero for windows.
   io.DeltaTime = static_cast<float>(sanitize_delta_time(delta_time));
   update_input();
 
@@ -492,6 +494,8 @@ bool system::impl::begin_frame(float display_width, float display_height, double
   ImGuiIO& io = ImGui::GetIO();
   io.DisplaySize = ImVec2{ display_width, display_height };
   io.DisplayFramebufferScale = ImVec2{ scale_, scale_ };
+  frame_delta_ = (std::isfinite(delta_time) && delta_time > 0.0) ? delta_time : 0.0;
+  // Dear ImGui requires a positive delta; keep the logical zero for windows.
   io.DeltaTime = static_cast<float>(sanitize_delta_time(delta_time));
   update_input();
 
@@ -605,7 +609,7 @@ void system::impl::draw(const system& owner) {
       const rect bounds = requested.has_value() ? sanitize_window_rect(*requested, viewport) : viewport;
       managed_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id(), bounds };
       if (scope.visible()) {
-        window_context context{ owner, bounds, static_cast<double>(io.DeltaTime), frame_index_, scale_ };
+        window_context context{ owner, bounds, frame_delta_, frame_index_, scale_ };
         content->draw(context);
       }
     }

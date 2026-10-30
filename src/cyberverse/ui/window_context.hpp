@@ -30,7 +30,7 @@ class system;
 struct window_context {
   const system& ui;              ///< Owning UI runtime
   rect bounds{};                 ///< Logical viewport rectangle
-  double delta_time = 0.0;       ///< Frame delta in seconds
+  double delta_time = 0.0;       ///< Logical frame delta in seconds; 0 when the clock is paused
   std::uint64_t frame_index = 0; ///< Monotonic UI frame index
   float scale = 1.0f;            ///< Logical-to-physical pixel scale
 };
