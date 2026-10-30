@@ -12,6 +12,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 
 #include "cyberverse/ui/rect.hpp"
@@ -22,19 +23,17 @@ namespace ui {
 /**
  * @brief Positive window features for one window
  *
- * The managed window has no title bar, no scrollbar, a background, input, and
- * no focus steal by default. Every flag opt-ins the corresponding Dear ImGui
- * behavior.
+ * The managed window has no scrollbar, a background, input, and no focus
+ * steal by default. Every flag opt-ins the corresponding Dear ImGui behavior.
  *
  */
 enum class window_feature : std::uint32_t {
   none = 0,
-  title_bar = 1u << 0,               ///< Draw a title bar (window::title())
-  scrollbar = 1u << 1,               ///< Allow a vertical scrollbar
-  transparent = 1u << 2,             ///< Do not draw the window background
-  no_input = 1u << 3,                ///< Display only, never receive input
-  focus_on_appearing = 1u << 4,      ///< Allow the window to take focus when shown
-  bring_to_front_on_focus = 1u << 5, ///< Allow focus to reorder the window in the host
+  scrollbar = 1u << 0,               ///< Allow a vertical scrollbar
+  transparent = 1u << 1,             ///< Do not draw the window background
+  no_input = 1u << 2,                ///< Display only, never receive input
+  focus_on_appearing = 1u << 3,      ///< Allow the window to take focus when shown
+  bring_to_front_on_focus = 1u << 4, ///< Allow focus to reorder the window in the host
 };
 
 /**
@@ -71,8 +70,8 @@ struct window_context;
  * window or set window position/size. Use Dear ImGui's native cursor, Dummy,
  * Spacing, child-window, and draw-list APIs to position content and whitespace.
  *
- * A window must return a stable, host-unique identifier. id(), title(),
- * visible(), and order() are called during a frame and must be cheap and
+ * A window has one stable, host-unique identifier supplied at construction.
+ * visible() and order() are called during a frame and must be cheap and
  * side-effect free.
  *
  */
@@ -83,23 +82,14 @@ public:
   /**
    * @brief Stable, host-unique window identifier
    *
-   * Must not be empty and must not contain "###" or "/". The application is
-   * responsible for host-wide uniqueness; it is validated when the window is
-   * added.
+   * The identifier is stored as a std::string and exposed as a view. Its data
+   * is null-terminated because it is also passed directly to Dear ImGui as the
+   * window name. It must not be empty, must not contain "###", and must not
+   * contain an embedded null character.
    *
    * @return std::string_view
    */
-  [[nodiscard]] virtual std::string_view id() const noexcept = 0;
-
-  /**
-   * @brief Optional window title; empty means no title
-   *
-   * The title may change, but it must not contain "###". The Dear ImGui window
-   * ID stays stable through the "###<id>" suffix.
-   *
-   * @return std::string_view
-   */
-  [[nodiscard]] virtual std::string_view title() const noexcept { return {}; }
+  [[nodiscard]] std::string_view id() const noexcept { return id_; }
 
   /**
    * @brief Whether the window participates in this frame
@@ -149,6 +139,19 @@ public:
    * @param context Frame information
    */
   virtual void draw(window_context& context) = 0;
+
+protected:
+  /**
+   * @brief Construct a window with its stable Dear ImGui identifier
+   *
+   * @param id Stable identifier; std::string guarantees a trailing '\0'
+   * @throws std::invalid_argument If id is empty, contains "###", or contains
+   *         an embedded null character
+   */
+  explicit window(std::string id);
+
+private:
+  std::string id_;
 };
 
 } // namespace ui

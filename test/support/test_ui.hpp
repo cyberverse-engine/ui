@@ -69,8 +69,8 @@ inline headless_context make_headless(int width = 640, int height = 480, bool wi
  */
 class fake_window final : public window {
 public:
-  std::string id_value = "test.window";
-  std::string title_value;
+  explicit fake_window(std::string id = "test.window") : window(std::move(id)) {}
+
   bool visible_value = true;
   int order_value = 0;
   window_feature feature_value = window_feature::none;
@@ -82,8 +82,6 @@ public:
   ImVec2 last_window_size{};
   std::function<void(window_context&)> on_draw;
 
-  [[nodiscard]] std::string_view id() const noexcept override { return id_value; }
-  [[nodiscard]] std::string_view title() const noexcept override { return title_value; }
   [[nodiscard]] bool visible() const noexcept override { return visible_value; }
   [[nodiscard]] int order() const noexcept override { return order_value; }
   [[nodiscard]] window_feature features() const noexcept override { return feature_value; }
@@ -102,14 +100,6 @@ public:
     }
   }
 };
-
-[[nodiscard]] inline std::string window_name(std::string_view id, std::string_view title = {}) {
-  std::string name;
-  name.append(title.data(), title.size());
-  name += "###";
-  name.append(id.data(), id.size());
-  return name;
-}
 
 } // namespace test
 } // namespace ui

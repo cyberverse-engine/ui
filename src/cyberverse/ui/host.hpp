@@ -102,9 +102,10 @@ public:
   /**
    * @brief Add an owned UI window
    *
-   * Window ids must be unique, non-empty, and contain neither "###" nor "/".
+   * Window ids are validated by the window constructor and must be unique
+   * within this host.
    *
-   * @throws std::invalid_argument On an invalid or duplicate id
+   * @throws std::invalid_argument On a duplicate id
    * @throws std::logic_error During an active frame
    */
   window& add_window(std::unique_ptr<window> content);

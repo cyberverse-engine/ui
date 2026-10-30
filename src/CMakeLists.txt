@@ -71,6 +71,7 @@ set(
   SOURCE_FILES
     cyberverse/ui/frame_stage.cpp
   cyberverse/ui/host.cpp
+  cyberverse/ui/window.cpp
   cyberverse/ui/detail/input_bridge.cpp
   cyberverse/ui/detail/key_map.cpp
   cyberverse/ui/detail/z_order.cpp

@@ -12,8 +12,8 @@
 
 #include "cyberverse/ui/font.hpp"
 #include "cyberverse/ui/frame_stage.hpp"
-#include "cyberverse/ui/rect.hpp"
 #include "cyberverse/ui/host.hpp"
+#include "cyberverse/ui/rect.hpp"
 #include "cyberverse/ui/theme.hpp"
 #include "cyberverse/ui/widgets.hpp"
 #include "cyberverse/ui/window.hpp"

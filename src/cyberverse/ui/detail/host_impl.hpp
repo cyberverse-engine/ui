@@ -79,7 +79,6 @@ private:
   void update_input();
   void rebuild_draw_order();
   [[nodiscard]] ImGuiWindowFlags window_flags(const window& content) const;
-  void build_window_name(const window& content);
   void abort_frame() noexcept;
   void destroy_context() noexcept;
 
@@ -87,9 +86,8 @@ private:
   ImGuiContext* context_ = nullptr;
   std::unique_ptr<Diligent::ImGuiDiligentRenderer> renderer_;
   std::string ini_path_;
-  std::string window_name_;
-  std::vector<std::string> window_names_;
   std::vector<std::unique_ptr<window>> windows_;
+  std::vector<window*> drawn_windows_;
   std::vector<window*> draw_order_;
   std::vector<std::pair<window*, int>> window_signature_;
   std::unordered_map<std::string, bool> font_loaded_;

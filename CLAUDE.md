@@ -57,8 +57,10 @@ not a backend-agnostic framework.
   `imgui.h`. Public widget/configuration headers stay ImGui-free. Only
   `widgets/run.hpp`, implementation `.cpp` files, and the internal
   `widgets/detail/font.hpp` / `scroll_canvas.cpp` bridge may include ImGui.
-- Window ids are host-wide unique and must not contain `###` or `/`.
-  Dear ImGui window names use `title###id`.
+- Window ids are host-wide unique; each window supplies its id as a
+  `std::string` at construction. The stored string is null-terminated and is
+  also the Dear ImGui window name. It must not be empty, contain `###`, or
+  contain an embedded null.
 - `ui::rect` and `ui::layout_size` are shared public geometry types. Windows
   and widgets must use the same `ui::rect`; widgets may alias it as
   `widgets::rect`. Widget `measure()` returns `ui::layout_size`; do not add a

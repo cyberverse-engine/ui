@@ -29,15 +29,13 @@ using cyberverse::ui::window_context;
 using cyberverse::ui::window_feature;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
-using cyberverse::ui::test::window_name;
 
 constexpr float width = 320.0f;
 constexpr float height = 200.0f;
 constexpr double frame_delta = 1.0 / 60.0;
 
 fake_window& add_fake(host& ui, std::string id) {
-  auto content = std::make_unique<fake_window>();
-  content->id_value = std::move(id);
+  auto content = std::make_unique<fake_window>(std::move(id));
   return static_cast<fake_window&>(ui.add_window(std::move(content)));
 }
 
@@ -112,8 +110,7 @@ TEST_CASE("multiple windows draw in insertion order on equal order", "[ui][windo
   std::vector<std::string> draw_order;
 
   for (const char* id : { "first", "second", "third" }) {
-    auto content = std::make_unique<fake_window>();
-    content->id_value = id;
+    auto content = std::make_unique<fake_window>(id);
     const std::string captured = id;
     content->on_draw = [&draw_order, captured](window_context&) {
       draw_order.push_back(captured);
@@ -195,17 +192,11 @@ TEST_CASE("window context preserves the logical frame delta", "[ui][window][cloc
   REQUIRE(observed_delta == Catch::Approx(0.0));
 }
 
-TEST_CASE("window names stay stable when the title changes", "[ui][window]") {
+TEST_CASE("the window id is the Dear ImGui window name", "[ui][window]") {
   auto context = make_headless();
   fake_window& content = add_fake(*context.ui, "test.window");
-  content.title_value = "First";
 
   render(*context.ui);
-  const std::string expected = window_name("test.window", "First");
-  REQUIRE(ImGui::FindWindowByName(expected.c_str()) != nullptr);
-
-  content.title_value = "Second";
-  render(*context.ui);
-  const std::string renamed = window_name("test.window", "Second");
-  REQUIRE(ImGui::FindWindowByName(renamed.c_str()) != nullptr);
+  REQUIRE(ImGui::FindWindowByName("test.window") != nullptr);
+  REQUIRE(content.id() == "test.window");
 }

@@ -89,9 +89,8 @@ constexpr float frame_delta = 1.0f / 60.0f;
 class host_window final : public cyberverse::ui::window {
 public:
   explicit host_window(std::string id, std::function<void(window_context&)> draw)
-      : id_{ std::move(id) }, draw_{ std::move(draw) } {}
+      : window(std::move(id)), draw_{ std::move(draw) } {}
 
-  [[nodiscard]] std::string_view id() const noexcept override { return id_; }
   [[nodiscard]] bool visible() const noexcept override { return true; }
 
   void draw(window_context& context) override {
@@ -100,7 +99,6 @@ public:
   }
 
 private:
-  std::string id_;
   std::function<void(window_context&)> draw_;
 };
 

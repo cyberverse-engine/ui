@@ -47,8 +47,8 @@ Yoga and the legacy immediate-mode widget tree are no longer dependencies.
 
 ## Windows
 
-A window is a content unit managed by the system. The system owns the Dear
-ImGui window; the application only paints content:
+A window is a content unit managed by the host. The host owns the Dear ImGui
+window; the application only paints content and supplies one stable id:
 
 ```cpp
 #include "cyberverse/ui.hpp"
@@ -56,7 +56,8 @@ ImGui window; the application only paints content:
 
 class status_window final : public cyberverse::ui::window {
 public:
-  [[nodiscard]] std::string_view id() const noexcept override { return "app.status"; }
+  status_window() : window("app.status") {}
+
   [[nodiscard]] cyberverse::ui::window_feature features() const noexcept override {
     return cyberverse::ui::window_feature::no_input;
   }
@@ -68,12 +69,14 @@ public:
 };
 ```
 
-The managed window fills the system viewport by default. A window may override
-`window_rect(viewport)` to request a local rectangle; the system clamps it and
-reports it through `window_context::bounds`, whose type is the shared `ui::rect`. Feature flags
-include title bar, scrollbar, transparent background, no input, focus on
+The managed window fills the host viewport by default. A window may override
+`window_rect(viewport)` to request a local rectangle; the host clamps it and
+reports it through `window_context::bounds`, whose type is the shared `ui::rect`.
+Feature flags include scrollbar, transparent background, no input, focus on
 appearing, and bring-to-front on focus. `window::order()` controls draw order;
-equal orders keep insertion order.
+equal orders keep insertion order. The constructor stores the id as a
+`std::string`, so its `data()` is null-terminated and can be passed directly to
+Dear ImGui.
 
 ## Widgets
 

@@ -347,15 +347,6 @@ window& host::impl::add_window(std::unique_ptr<window> content) {
     throw std::invalid_argument("cyberverse::ui::host: window must not be null");
   }
   const std::string_view id = content->id();
-  if (id.empty()) {
-    throw std::invalid_argument("cyberverse::ui::host: a window id must not be empty");
-  }
-  if (id.find("###") != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::host: a window id must not contain \"###\"");
-  }
-  if (id.find('/') != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::host: a window id must not contain '/'");
-  }
   if (find_window(id) != nullptr) {
     throw std::invalid_argument(std::string{ "cyberverse::ui::host: duplicate window id '" } + std::string{ id } + "'");
   }
@@ -547,9 +538,6 @@ ImGuiWindowFlags host::impl::window_flags(const window& content) const {
                            ImGuiWindowFlags_NoBringToFrontOnFocus;
 
   const window_feature features = content.features();
-  if (has_feature(features, window_feature::title_bar)) {
-    flags &= ~ImGuiWindowFlags_NoTitleBar;
-  }
   if (has_feature(features, window_feature::scrollbar)) {
     flags &= ~ImGuiWindowFlags_NoScrollbar;
   }
@@ -568,16 +556,6 @@ ImGuiWindowFlags host::impl::window_flags(const window& content) const {
   return flags;
 }
 
-void host::impl::build_window_name(const window& content) {
-  const std::string_view title = content.title();
-  const std::string_view id = content.id();
-
-  window_name_.clear();
-  window_name_.append(title.data(), title.size());
-  window_name_ += "###";
-  window_name_.append(id.data(), id.size());
-}
-
 void host::impl::draw(const host& owner) {
   if (context_ == nullptr || !frame_active_) {
     return;
@@ -591,22 +569,18 @@ void host::impl::draw(const host& owner) {
     ImGuiIO& io = ImGui::GetIO();
     const ImVec2 display = io.DisplaySize;
     const rect viewport{ 0.0f, 0.0f, display.x, display.y };
-    window_names_.clear();
+    drawn_windows_.clear();
 
     for (window* content : draw_order_) {
       if (content == nullptr || !content->visible()) {
         continue;
       }
-      if (content->title().find("###") != std::string_view::npos) {
-        throw std::invalid_argument("cyberverse::ui::host: a window title must not contain \"###\"");
-      }
 
-      build_window_name(*content);
-      window_names_.push_back(window_name_);
-
+      const std::string_view id = content->id();
       const std::optional<rect> requested = content->window_rect(viewport);
       const rect bounds = requested.has_value() ? sanitize_window_rect(*requested, viewport) : viewport;
-      managed_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id(), bounds };
+      managed_window_scope scope{ id.data(), window_flags(*content), id, bounds };
+      drawn_windows_.push_back(content);
       if (scope.visible()) {
         window_context context{ owner, bounds, frame_delta_, frame_index_, scale_ };
         content->draw(context);
@@ -614,8 +588,8 @@ void host::impl::draw(const host& owner) {
     }
 
     // Raise windows in draw order so the last visible window wins.
-    for (const std::string& name : window_names_) {
-      detail::bring_window_to_front(name.c_str());
+    for (window* content : drawn_windows_) {
+      detail::bring_window_to_front(content->id().data());
     }
   } catch (...) {
     abort_frame();

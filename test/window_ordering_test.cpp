@@ -31,11 +31,11 @@ constexpr float height = 200.0f;
 constexpr double frame_delta = 1.0 / 60.0;
 
 fake_window& add_recording_window(host& ui, std::string id, int order, std::vector<std::string>& draw_order) {
-  auto content = std::make_unique<fake_window>();
-  content->id_value = std::move(id);
+  auto content = std::make_unique<fake_window>(std::move(id));
   content->order_value = order;
-  content->on_draw = [&draw_order, id = content->id_value](window_context&) {
-    draw_order.push_back(id);
+  const std::string captured_id = std::string{ content->id() };
+  content->on_draw = [&draw_order, captured_id](window_context&) {
+    draw_order.push_back(captured_id);
   };
   return static_cast<fake_window&>(ui.add_window(std::move(content)));
 }
@@ -94,34 +94,22 @@ TEST_CASE("hidden windows are skipped", "[ui][window][visibility]") {
   REQUIRE(draw_order == std::vector<std::string>{ "hidden.window" });
 }
 
-TEST_CASE("window ids are validated and unique", "[ui][window]") {
-  auto context = make_headless();
+TEST_CASE("window ids are validated in the constructor and unique in the host", "[ui][window]") {
+  REQUIRE_THROWS_AS(fake_window{ "" }, std::invalid_argument);
+  REQUIRE_THROWS_AS(fake_window{ "bad###id" }, std::invalid_argument);
+  REQUIRE_THROWS_AS((fake_window{ std::string{ "bad\0id", 6 } }), std::invalid_argument);
 
-  auto first = std::make_unique<fake_window>();
-  first->id_value = "same";
+  auto context = make_headless();
+  auto first = std::make_unique<fake_window>("same");
   context.ui->add_window(std::move(first));
 
-  auto duplicate = std::make_unique<fake_window>();
-  duplicate->id_value = "same";
+  auto duplicate = std::make_unique<fake_window>("same");
   REQUIRE_THROWS_AS(context.ui->add_window(std::move(duplicate)), std::invalid_argument);
-
-  auto empty = std::make_unique<fake_window>();
-  empty->id_value = "";
-  REQUIRE_THROWS_AS(context.ui->add_window(std::move(empty)), std::invalid_argument);
-
-  auto separator = std::make_unique<fake_window>();
-  separator->id_value = "bad/id";
-  REQUIRE_THROWS_AS(context.ui->add_window(std::move(separator)), std::invalid_argument);
-
-  auto marker = std::make_unique<fake_window>();
-  marker->id_value = "bad###id";
-  REQUIRE_THROWS_AS(context.ui->add_window(std::move(marker)), std::invalid_argument);
 }
 
 TEST_CASE("windows are owned, findable, and removable", "[ui][window]") {
   auto context = make_headless();
-  auto content = std::make_unique<fake_window>();
-  content->id_value = "owned.window";
+  auto content = std::make_unique<fake_window>("owned.window");
   fake_window* content_ptr = content.get();
   context.ui->add_window(std::move(content));
 
@@ -139,8 +127,7 @@ TEST_CASE("windows are owned, findable, and removable", "[ui][window]") {
 
 TEST_CASE("window mutations during a frame are rejected", "[ui][window]") {
   auto context = make_headless();
-  auto content = std::make_unique<fake_window>();
-  content->id_value = "frame.window";
+  auto content = std::make_unique<fake_window>("frame.window");
   fake_window* content_ptr = content.get();
   context.ui->add_window(std::move(content));
 

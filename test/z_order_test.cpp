@@ -23,13 +23,11 @@ using cyberverse::ui::host;
 using cyberverse::ui::detail::display_order;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
-using cyberverse::ui::test::window_name;
 
 constexpr double frame_delta = 1.0 / 60.0;
 
 void add_window(host& ui, std::string id, int order) {
-  auto content = std::make_unique<fake_window>();
-  content->id_value = std::move(id);
+  auto content = std::make_unique<fake_window>(std::move(id));
   content->order_value = order;
   ui.add_window(std::move(content));
 }
@@ -44,10 +42,8 @@ TEST_CASE("higher-order windows stay above lower windows", "[ui][z-order]") {
   REQUIRE(context.ui->begin_frame(320.0f, 200.0f, frame_delta));
   context.ui->draw();
 
-  const std::string bottom_name = window_name("bottom.window");
-  const std::string top_name = window_name("top.window");
-  REQUIRE(display_order(top_name.c_str(), bottom_name.c_str()) == 1);
-  REQUIRE(display_order(bottom_name.c_str(), top_name.c_str()) == -1);
+  REQUIRE(display_order("top.window", "bottom.window") == 1);
+  REQUIRE(display_order("bottom.window", "top.window") == -1);
 
   context.ui->end_frame();
 }
@@ -60,9 +56,7 @@ TEST_CASE("relative order is stable for equal-order windows", "[ui][z-order]") {
   REQUIRE(context.ui->begin_frame(320.0f, 200.0f, frame_delta));
   context.ui->draw();
 
-  const std::string first_name = window_name("first.window");
-  const std::string second_name = window_name("second.window");
-  REQUIRE(display_order(second_name.c_str(), first_name.c_str()) == 1);
+  REQUIRE(display_order("second.window", "first.window") == 1);
 
   context.ui->end_frame();
 }

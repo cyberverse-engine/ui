@@ -40,17 +40,19 @@ scissor。
 
 顶层窗口宿主，不是 widget。
 
-- `id`、`title`、`order`、`visible`、`features`、`window_rect`、
-  `draw(window_context&)`；
-- 默认填满 system viewport；
-- `window_rect` 可请求局部窗口，system 负责 clamp；
+- 构造时传入 `std::string` 作为 `id`；
+- `id` 只承担身份，不承担显示标题；
+- `order`、`visible`、`features`、`window_rect`、`draw(window_context&)`；
+- 默认填满 host viewport；
+- `window_rect` 可请求局部窗口，host 负责 clamp；
 - `order()` 数值越大越靠上，相同 order 保持插入顺序；
-- feature：title bar、scrollbar、transparent、no input、focus on appearing、
+- feature：scrollbar、transparent、no input、focus on appearing、
   bring to front on focus；
-- 输入捕获、z-order、异常清理由 system 统一处理；
+- 输入捕获、z-order、异常清理由 host 统一处理；
 - 窗口内容可以用原生 ImGui，也可以调用 `widgets::run`。
 
-window id 在 system 内全局唯一；ImGui 窗口名为 `title###id`。
+id 在 host 内全局唯一，且是 `std::string`，`data()` 以 `\0` 结尾，可直接作为
+ImGui 窗口名。id 不能为空、不能包含 `###`、不能包含嵌入的 `\0`。
 
 ### 2.3 公共几何类型
 

@@ -21,7 +21,6 @@
 #include "cyberverse/ui/widgets/flexbox.hpp"
 #include "cyberverse/ui/widgets/property.hpp"
 #include "cyberverse/ui/widgets/radio.hpp"
-#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/run.hpp"
 #include "cyberverse/ui/widgets/scroll_view.hpp"
 #include "cyberverse/ui/widgets/stack.hpp"
@@ -29,4 +28,5 @@
 #include "cyberverse/ui/widgets/text.hpp"
 #include "cyberverse/ui/widgets/text_input.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
+#include "cyberverse/ui/widgets/types.hpp"
 #include "cyberverse/ui/widgets/visibility.hpp"

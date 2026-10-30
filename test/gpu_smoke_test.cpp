@@ -20,8 +20,8 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
-#include "cyberverse/ui/imgui.hpp"
 #include "cyberverse/ui/host.hpp"
+#include "cyberverse/ui/imgui.hpp"
 #include "cyberverse/ui/window.hpp"
 
 namespace {
@@ -33,7 +33,7 @@ using cyberverse::ui::window_context;
 
 class smoke_window final : public window {
 public:
-  [[nodiscard]] std::string_view id() const noexcept override { return "gpu.smoke"; }
+  smoke_window() : window("gpu.smoke") {}
 
   void draw(window_context& /*context*/) override { ImGui::TextUnformatted("cyberverse ui gpu smoke"); }
 };
