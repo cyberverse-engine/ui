@@ -16,7 +16,6 @@
 #include <utility>
 
 #include "cyberverse/animation/lerp.hpp"
-#include "cyberverse/ui/widgets/context.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
 
 namespace cyberverse {
@@ -116,14 +115,9 @@ void state::emit(event_type event) {
   }
 }
 
-void state::tick(update_context& ctx) noexcept {
-  if (ctx.animations.paused()) {
+void state::tick(float dt) noexcept {
+  if (!std::isfinite(dt) || dt <= 0.0f) {
     return;
-  }
-
-  float dt = ctx.dt * ctx.animations.speed();
-  if (!(dt > 0.0f)) {
-    dt = 0.0f;
   }
 
   for (property_entry& data : properties_) {

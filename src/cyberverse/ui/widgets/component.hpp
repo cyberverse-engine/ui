@@ -39,7 +39,7 @@ namespace widgets {
  *
  */
 template <typename Impl>
-concept impl_component = requires(Impl& impl, state& s, const theme& th, const constraints& lim, draw_context& ctx) {
+concept impl_component = requires(Impl& impl, state& s, const theme& th, const constraints& lim, widget_context& ctx) {
   { impl.measure(s, th, lim) } -> std::convertible_to<layout_size>;
   impl.draw(s, ctx);
   impl.visit_states([](state&) {
@@ -75,7 +75,7 @@ public:
     return impl_.measure(s, th, lim);
   }
 
-  void draw(draw_context& ctx) {
+  void draw(widget_context& ctx) {
     const rect& bounds = s.bounds();
     if (s.get_visibility() != visibility::visible || bounds.width <= 0.0f || bounds.height <= 0.0f) {
       return;
@@ -87,9 +87,10 @@ public:
     ctx.opacity = previous;
   }
 
-  void tick(update_context& ctx) {
+  void tick(widget_context& ctx) {
+    const float dt = static_cast<float>(ctx.window.delta_time);
     visit_states([&](state& value) {
-      value.tick(ctx);
+      value.tick(dt);
     });
   }
 
@@ -108,14 +109,13 @@ private:
  *
  */
 template <typename T>
-concept component_like =
-    requires(T& c, const theme& th, const constraints& lim, draw_context& dctx, update_context& uctx) {
-      { c.s } -> std::same_as<state&>;
-      { c.visibility_value() } -> std::same_as<visibility>;
-      { c.measure(th, lim) } -> std::same_as<layout_size>;
-      c.draw(dctx);
-      c.tick(uctx);
-    };
+concept component_like = requires(T& c, const theme& th, const constraints& lim, widget_context& ctx) {
+  { c.s } -> std::same_as<state&>;
+  { c.visibility_value() } -> std::same_as<visibility>;
+  { c.measure(th, lim) } -> std::same_as<layout_size>;
+  c.draw(ctx);
+  c.tick(ctx);
+};
 
 } // namespace widgets
 } // namespace ui

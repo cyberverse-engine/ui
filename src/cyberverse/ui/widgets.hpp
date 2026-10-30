@@ -10,7 +10,6 @@
  */
 #pragma once
 
-#include "cyberverse/ui/widgets/animator.hpp"
 #include "cyberverse/ui/widgets/box.hpp"
 #include "cyberverse/ui/widgets/button.hpp"
 #include "cyberverse/ui/widgets/checkbox.hpp"

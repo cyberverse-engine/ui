@@ -131,7 +131,7 @@ struct flexbox {
     return result;
   }
 
-  void draw(state& s, draw_context& ctx) const {
+  void draw(state& s, widget_context& ctx) const {
     const rect& bounds = s.bounds();
     if (bounds.width <= 0.0f || bounds.height <= 0.0f) {
       return;
@@ -241,7 +241,7 @@ private:
                  std::size_t& placed,
                  float origin_x,
                  float origin_y,
-                 draw_context& ctx) const {
+                 widget_context& ctx) const {
     if (!value.active) {
       detail::state_access::set_bounds(child.s, rect{});
       return;

@@ -32,7 +32,7 @@ struct checkbox {
   std::optional<choice_style> style_override;
 
   [[nodiscard]] layout_size measure(const state& s, const theme& th, const constraints& lim) const noexcept;
-  void draw(state& s, draw_context& ctx) const;
+  void draw(state& s, widget_context& ctx) const;
   template <typename F>
   void visit_states(F&& /*visitor*/) const noexcept {}
 };

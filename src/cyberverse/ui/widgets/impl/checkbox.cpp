@@ -40,7 +40,7 @@ layout_size checkbox::measure(const state& s, const theme& th, const constraints
   return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
 }
 
-void checkbox::draw(state& s, draw_context& ctx) const {
+void checkbox::draw(state& s, widget_context& ctx) const {
   const rect& bounds = s.bounds();
   if (value == nullptr || bounds.width <= 0.0f || bounds.height <= 0.0f) {
     return;

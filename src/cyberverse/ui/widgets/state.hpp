@@ -25,7 +25,6 @@ namespace cyberverse {
 namespace ui {
 namespace widgets {
 
-struct update_context;
 namespace detail {
 struct state_access;
 }
@@ -35,8 +34,7 @@ struct state_access;
  *
  * State is caller-owned, non-copyable/non-movable, and stores all mutable
  * component data: layout bounds, property values and their animation metadata,
- * visibility, and the event handler. It does not own child components or the
- * global animator.
+ * visibility, and the event handler. It does not own child components.
  *
  */
 class state {
@@ -89,8 +87,10 @@ public:
 
   /**
    * @brief Advance all active properties by one frame
+   *
+   * @param dt Frame delta in seconds; non-positive values freeze animations
    */
-  void tick(update_context& ctx) noexcept;
+  void tick(float dt) noexcept;
 
 private:
   friend struct detail::state_access;

@@ -17,7 +17,6 @@ set(
   cyberverse/ui/imgui.hpp
   cyberverse/ui/rect.hpp
   cyberverse/ui/widgets.hpp
-  cyberverse/ui/widgets/animator.hpp
   cyberverse/ui/widgets/box.hpp
   cyberverse/ui/widgets/box_types.hpp
   cyberverse/ui/widgets/button.hpp

@@ -86,7 +86,8 @@ The widgets API is deliberately different from the legacy per-frame tree:
 - factories return a static `component<Impl>` wrapper;
 - containers accept named lvalue children and store references;
 - `std::function` is used only by `state::on_event`;
-- `widgets::run(root, frame_context)` is the fixed frame entry;
+- `widgets::run(window_context, theme, root, opacity = 1.0f)` is the fixed
+  frame entry;
 - widget `measure()` returns `ui::layout_size`;
 - `widgets::rect` and `widgets::layout_size` are aliases of the shared `ui`
   types, not separate geometry types.
@@ -98,7 +99,6 @@ widgets::state row_s{ "row" };
 widgets::state title_s{ "title" };
 widgets::state ok_s{ "ok" };
 widgets::theme appearance;
-widgets::animator animations;
 
 ok_s.on_event([](widgets::state& s, widgets::event_type event) {
   if (event == widgets::event_type::click) {
@@ -114,12 +114,14 @@ auto row = widgets::stack(
     title,
     ok);
 
-widgets::run(row, {dt, appearance, animations});
+widgets::run(window, appearance, row);
 ```
 
 `run()` ticks the component tree, measures, assigns bounds, draws, and advances
-the ImGui cursor. `dt` belongs to the update phase; the draw context does not
-carry time or the animator.
+the ImGui cursor. Animation time comes from `window.delta_time`; a zero delta
+freezes all animations. The optional fourth argument is the initial inherited
+opacity for the whole root subtree. Widgets have no separate pause/speed
+control; pause or time-scale the runtime clock instead.
 
 ### Components
 

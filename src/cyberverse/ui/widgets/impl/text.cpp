@@ -37,7 +37,7 @@ layout_size text::measure(const state& s, const theme& th, const constraints& /*
   return layout_size{ width, height };
 }
 
-void text::draw(state& s, draw_context& ctx) const {
+void text::draw(state& s, widget_context& ctx) const {
   const rect& bounds = s.bounds();
   if (value.empty() || bounds.width <= 0.0f || bounds.height <= 0.0f) {
     return;

@@ -12,6 +12,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -35,14 +36,12 @@ using cyberverse::ui::test::make_headless;
 
 namespace widgets = cyberverse::ui::widgets;
 using widgets::align_items;
-using widgets::animator;
 using widgets::button_style;
 using widgets::divider_options;
 using widgets::divider_orientation;
 using widgets::event_type;
 using widgets::flex_direction;
 using widgets::flex_options;
-using widgets::frame_context;
 using widgets::insets;
 using widgets::justify_content;
 using widgets::property_type;
@@ -53,7 +52,6 @@ using widgets::stack_direction;
 using widgets::stack_options;
 using widgets::state;
 using widgets::theme;
-using widgets::update_context;
 using widgets::visibility;
 
 struct probe_impl {
@@ -69,7 +67,7 @@ struct probe_impl {
     return widgets::layout_size{ 10.0f, 10.0f };
   }
 
-  void draw(widgets::state&, widgets::draw_context& ctx) {
+  void draw(widgets::state&, widgets::widget_context& ctx) {
     if (observed_opacity != nullptr) {
       *observed_opacity = ctx.opacity;
     }
@@ -102,8 +100,8 @@ private:
   std::function<void(window_context&)> draw_;
 };
 
-void run_frame(host& ui) {
-  REQUIRE(ui.begin_frame(width, height, frame_delta));
+void run_frame(host& ui, double delta = frame_delta) {
+  REQUIRE(ui.begin_frame(width, height, delta));
   ui.draw();
   ui.end_frame();
 }
@@ -123,7 +121,6 @@ void click(cyberverse::platform::backends::headless::window& window, host& ui, c
 
 TEST_CASE("widgets state stores immediate and animated values", "[ui][widgets][state]") {
   state value{ "widgets.state" };
-  animator animations;
 
   REQUIRE(value.value(property_type::opacity) == Catch::Approx(1.0f));
   value.set(property_type::height, 100.0f);
@@ -131,11 +128,13 @@ TEST_CASE("widgets state stores immediate and animated values", "[ui][widgets][s
 
   value.animate(
       property_type::height, 0.0f, { .duration = 1.0f, .easing = cyberverse::animation::easing_type::linear });
-  update_context update{ 0.5f, animations };
-  value.tick(update);
+  value.tick(0.5f);
   REQUIRE(value.value(property_type::height) == Catch::Approx(50.0f));
 
-  value.tick(update);
+  value.tick(0.0f);
+  REQUIRE(value.value(property_type::height) == Catch::Approx(50.0f));
+
+  value.tick(0.5f);
   REQUIRE(value.value(property_type::height) == Catch::Approx(0.0f));
   REQUIRE_FALSE(value.has(property_type::width));
 }
@@ -154,10 +153,12 @@ TEST_CASE("widgets component applies visibility and opacity centrally", "[ui][wi
   widgets::component<probe_impl> probe{ value, probe_impl{ &observed_opacity, &draws } };
   widgets::detail::state_access::set_bounds(value, rect{ 0.0f, 0.0f, 10.0f, 10.0f });
 
-  widgets::draw_context context{ appearance, 1.0f };
+  auto headless = make_headless();
+  window_context window{ *headless.ui, rect{}, 0.0, 0, 1.0f };
+  widgets::widget_context context{ window, appearance, 0.5f };
   probe.draw(context);
   REQUIRE(draws == 1);
-  REQUIRE(observed_opacity == Catch::Approx(0.25f));
+  REQUIRE(observed_opacity == Catch::Approx(0.125f));
 
   widgets::detail::state_access::set_bounds(value, rect{});
   probe.draw(context);
@@ -184,12 +185,11 @@ TEST_CASE("widgets box clips and pads its child", "[ui][widgets][box]") {
   child_s.set(property_type::width, 40.0f);
   child_s.set(property_type::height, 20.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.box", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.box", [&](window_context& context) {
     auto child = widgets::text(child_s, "boxed");
     auto root = widgets::box(box_s, widgets::box_options{ .padding = insets{ 5.0f, 6.0f, 7.0f, 8.0f } }, child);
-    widgets::run(root, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, root);
   });
   context.ui->add_window(std::move(window));
   run_frame(*context.ui);
@@ -219,10 +219,9 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
   REQUIRE(measures == 0);
 
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  animator animations;
-  auto window = std::make_unique<host_window>("widgets.zero", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.zero", [&](window_context& context) {
     auto root_draw = widgets::stack(container_s, stack_options{}, child);
-    widgets::run(root_draw, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, root_draw);
   });
   context.ui->add_window(std::move(window));
   run_frame(*context.ui);
@@ -260,9 +259,8 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
   b_s.set(property_type::width, 50.0f);
   b_s.set(property_type::height, 20.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.flex", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.flex", [&](window_context& context) {
     auto a = widgets::text(a_s, "A");
     auto b = widgets::text(b_s, "B");
     auto row = widgets::flexbox(
@@ -270,7 +268,7 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
         flex_options{ .direction = flex_direction::row, .gap = 10.0f, .padding = insets{ 5.0f, 5.0f, 5.0f, 5.0f } },
         a,
         b);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window));
   run_frame(*context.ui);
@@ -291,11 +289,11 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
   d_s.set(property_type::width, 100.0f);
   d_s.set(property_type::height, 10.0f);
 
-  auto window2 = std::make_unique<host_window>("widgets.shrink", [&](window_context&) {
+  auto window2 = std::make_unique<host_window>("widgets.shrink", [&](window_context& context) {
     auto c = widgets::text(c_s, "C");
     auto d = widgets::text(d_s, "D");
     auto row = widgets::flexbox(shrink_s, flex_options{}, c, d);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window2));
   run_frame(*context.ui);
@@ -310,12 +308,12 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
   e_s.set(property_type::height, 50.0f);
   f_s.set(property_type::height, 50.0f);
 
-  auto window3 = std::make_unique<host_window>("widgets.column", [&](window_context&) {
+  auto window3 = std::make_unique<host_window>("widgets.column", [&](window_context& context) {
     auto e = widgets::text(e_s, "E");
     auto f = widgets::text(f_s, "F");
     auto column = widgets::flexbox(
         column_s, flex_options{ .direction = flex_direction::column, .align = align_items::stretch }, e, f);
-    widgets::run(column, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, column);
   });
   context.ui->add_window(std::move(window3));
   run_frame(*context.ui);
@@ -333,18 +331,39 @@ TEST_CASE("widgets run ticks the root before measuring", "[ui][widgets][run]") {
   root_s.animate(
       property_type::height, 0.0f, { .duration = 1.0f, .easing = cyberverse::animation::easing_type::linear });
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.run", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.run", [&](window_context& context) {
     auto root = widgets::stack(root_s, stack_options{});
-    widgets::run(root, frame_context{ 0.5f, appearance, animations });
+    widgets::run(context, appearance, root);
   });
   context.ui->add_window(std::move(window));
 
-  run_frame(*context.ui);
+  run_frame(*context.ui, 0.0);
+  REQUIRE(root_s.bounds().height == Catch::Approx(100.0f));
+  run_frame(*context.ui, 0.5);
   REQUIRE(root_s.bounds().height == Catch::Approx(50.0f));
-  run_frame(*context.ui);
+  run_frame(*context.ui, 0.5);
   REQUIRE(root_s.bounds().height == Catch::Approx(0.0f));
+}
+
+TEST_CASE("widgets run applies its initial opacity", "[ui][widgets][run][opacity]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+
+  state root_s{ "opacity.root" };
+  root_s.set(property_type::opacity, 0.5f);
+  theme appearance;
+  float observed_opacity = -1.0f;
+  int draws = 0;
+
+  auto window = std::make_unique<host_window>("widgets.opacity", [&](window_context& window_context) {
+    auto root = widgets::component<probe_impl>{ root_s, probe_impl{ &observed_opacity, &draws } };
+    widgets::run(window_context, appearance, root, 0.5f);
+  });
+  context.ui->add_window(std::move(window));
+  run_frame(*context.ui);
+
+  REQUIRE(draws == 1);
+  REQUIRE(observed_opacity == Catch::Approx(0.25f));
 }
 
 TEST_CASE("widgets empty stack uses padding", "[ui][widgets][stack]") {
@@ -352,11 +371,10 @@ TEST_CASE("widgets empty stack uses padding", "[ui][widgets][stack]") {
 
   state root_s{ "root" };
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.empty", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.empty", [&](window_context& context) {
     auto root = widgets::stack(root_s, stack_options{ .padding = insets{ 3.0f, 4.0f, 5.0f, 6.0f } });
-    widgets::run(root, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, root);
   });
   context.ui->add_window(std::move(window));
 
@@ -373,7 +391,6 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
   state ok_s{ "ok" };
   state plain_s{ "plain" };
   theme appearance;
-  animator animations;
 
   button_style override_style;
   override_style.padding_x = 20.0f;
@@ -386,7 +403,7 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
   ImVec2 ok_text_size{};
   widgets::layout_size plain_button_size{};
 
-  auto window = std::make_unique<host_window>("widgets.layout", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.layout", [&](window_context& context) {
     title_text_size = ImGui::CalcTextSize("Hello");
     ok_text_size = ImGui::CalcTextSize("OK");
 
@@ -400,7 +417,7 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
         title,
         ok);
 
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
     row_bounds = row_s.bounds();
     title_bounds = title_s.bounds();
     ok_bounds = ok_s.bounds();
@@ -423,7 +440,6 @@ TEST_CASE("widgets button click emits the state event", "[ui][widgets][button]")
   state row_s{ "row" };
   state ok_s{ "ok" };
   theme appearance;
-  animator animations;
   int clicks = 0;
   ok_s.on_event([&](state&, event_type event) {
     if (event == event_type::click) {
@@ -432,10 +448,10 @@ TEST_CASE("widgets button click emits the state event", "[ui][widgets][button]")
   });
 
   rect ok_bounds{};
-  auto window = std::make_unique<host_window>("widgets.click", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.click", [&](window_context& context) {
     auto ok = widgets::button(ok_s, "OK");
     auto row = widgets::stack(row_s, stack_options{}, ok);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
     ok_bounds = ok_s.bounds();
   });
   context.ui->add_window(std::move(window));
@@ -458,7 +474,6 @@ TEST_CASE("widgets checkbox and radio update external values", "[ui][widgets][ch
   int checkbox_events = 0;
   int radio_events = 0;
   theme appearance;
-  animator animations;
 
   check_s.on_event([&](state&, event_type event) {
     if (event == event_type::value_changed) {
@@ -473,12 +488,12 @@ TEST_CASE("widgets checkbox and radio update external values", "[ui][widgets][ch
 
   rect check_bounds{};
   rect second_bounds{};
-  auto window = std::make_unique<host_window>("widgets.choice", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.choice", [&](window_context& context) {
     auto check = widgets::checkbox(check_s, "Enabled", checked);
     auto first = widgets::radio(first_s, "First", selected, 1);
     auto second = widgets::radio(second_s, "Second", selected, 2);
     auto column = widgets::stack(column_s, stack_options{}, check, first, second);
-    widgets::run(column, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, column);
     check_bounds = check_s.bounds();
     second_bounds = second_s.bounds();
   });
@@ -504,7 +519,6 @@ TEST_CASE("widgets text input edits external text", "[ui][widgets][input]") {
   std::string value;
   int changed = 0;
   theme appearance;
-  animator animations;
   input_s.on_event([&](state&, event_type event) {
     if (event == event_type::value_changed) {
       ++changed;
@@ -512,10 +526,10 @@ TEST_CASE("widgets text input edits external text", "[ui][widgets][input]") {
   });
 
   rect input_bounds{};
-  auto window = std::make_unique<host_window>("widgets.input", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.input", [&](window_context& context) {
     auto input = widgets::text_input(input_s, value, { .placeholder = "Type" });
     auto column = widgets::stack(column_s, stack_options{}, input);
-    widgets::run(column, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, column);
     input_bounds = input_s.bounds();
   });
   context.ui->add_window(std::move(window));
@@ -570,12 +584,11 @@ TEST_CASE("widgets scroll_view scrolls both axes and clamps offsets", "[ui][widg
   content_s.set(property_type::width, 300.0f);
   content_s.set(property_type::height, 200.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.scroll", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.scroll", [&](window_context& context) {
     auto content = widgets::text(content_s, "content");
     auto view = widgets::scroll_view(view_s, scroll_options{}, content);
-    widgets::run(view, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, view);
   });
   context.ui->add_window(std::move(window));
 
@@ -609,14 +622,13 @@ TEST_CASE("widgets scroll_view supports horizontal content", "[ui][widgets][scro
   second_s.set(property_type::width, 80.0f);
   second_s.set(property_type::height, 20.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.hscroll", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.hscroll", [&](window_context& context) {
     auto first = widgets::text(first_s, "A");
     auto second = widgets::text(second_s, "B");
     auto view = widgets::scroll_view(
         view_s, scroll_options{ .direction = scroll_content_direction::horizontal }, first, second);
-    widgets::run(view, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, view);
   });
   context.ui->add_window(std::move(window));
 
@@ -638,12 +650,11 @@ TEST_CASE("widgets scroll_view scrollbar changes the offset", "[ui][widgets][scr
   content_s.set(property_type::width, 300.0f);
   content_s.set(property_type::height, 200.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.scrollbar", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.scrollbar", [&](window_context& context) {
     auto content = widgets::text(content_s, "content");
     auto view = widgets::scroll_view(view_s, scroll_options{}, content);
-    widgets::run(view, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, view);
   });
   context.ui->add_window(std::move(window));
   run_frame(*context.ui);
@@ -682,19 +693,45 @@ TEST_CASE("widgets flexbox justifies remaining main-axis space", "[ui][widgets][
   b_s.set(property_type::width, 50.0f);
   b_s.set(property_type::height, 10.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.flex.justify", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.flex.justify", [&](window_context& context) {
     auto a = widgets::text(a_s, "A");
     auto b = widgets::text(b_s, "B");
     auto row = widgets::flexbox(row_s, flex_options{ .justify = justify_content::end }, a, b);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window));
   run_frame(*context.ui);
 
   REQUIRE(a_s.bounds().x == Catch::Approx(100.0f));
   REQUIRE(b_s.bounds().x == Catch::Approx(150.0f));
+}
+
+TEST_CASE("widgets run sanitizes its initial opacity", "[ui][widgets][run][opacity]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+
+  state over_s{ "opacity.over" };
+  state nan_s{ "opacity.nan" };
+  theme appearance;
+  float over_opacity = -1.0f;
+  float nan_opacity = -1.0f;
+  int draws = 0;
+
+  auto over_window = std::make_unique<host_window>("widgets.opacity.over", [&](window_context& window_context) {
+    auto root = widgets::component<probe_impl>{ over_s, probe_impl{ &over_opacity, &draws } };
+    widgets::run(window_context, appearance, root, 2.0f);
+  });
+  context.ui->add_window(std::move(over_window));
+
+  auto nan_window = std::make_unique<host_window>("widgets.opacity.nan", [&](window_context& window_context) {
+    auto root = widgets::component<probe_impl>{ nan_s, probe_impl{ &nan_opacity, &draws } };
+    widgets::run(window_context, appearance, root, std::numeric_limits<float>::quiet_NaN());
+  });
+  context.ui->add_window(std::move(nan_window));
+  run_frame(*context.ui);
+
+  REQUIRE(over_opacity == Catch::Approx(1.0f));
+  REQUIRE(nan_opacity == Catch::Approx(1.0f));
 }
 
 TEST_CASE("widgets flexbox consumes animated width inputs", "[ui][widgets][flexbox]") {
@@ -711,17 +748,16 @@ TEST_CASE("widgets flexbox consumes animated width inputs", "[ui][widgets][flexb
   b_s.set(property_type::height, 20.0f);
   a_s.animate(property_type::width, 150.0f, { .duration = 1.0f, .easing = cyberverse::animation::easing_type::linear });
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.flex.animated", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.flex.animated", [&](window_context& context) {
     auto a = widgets::text(a_s, "A");
     auto b = widgets::text(b_s, "B");
     auto row = widgets::flexbox(row_s, flex_options{}, a, b);
-    widgets::run(row, frame_context{ 0.5f, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window));
 
-  run_frame(*context.ui);
+  run_frame(*context.ui, 0.5);
   REQUIRE(a_s.value(property_type::width) == Catch::Approx(100.0f));
   REQUIRE(a_s.bounds().width == Catch::Approx(100.0f));
   REQUIRE(b_s.bounds().width == Catch::Approx(50.0f));
@@ -734,9 +770,8 @@ TEST_CASE("widgets stack distinguishes invisible and collapsed children", "[ui][
   state first_s{ "first" };
   state second_s{ "second" };
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.visibility", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.visibility", [&](window_context& context) {
     auto first = widgets::text(first_s, "A");
     auto second = widgets::text(second_s, "B");
     auto row = widgets::stack(
@@ -744,7 +779,7 @@ TEST_CASE("widgets stack distinguishes invisible and collapsed children", "[ui][
         stack_options{ .direction = stack_direction::horizontal, .gap = 10.0f, .padding = insets{ 10, 10, 10, 10 } },
         first,
         second);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window));
 
@@ -772,13 +807,12 @@ TEST_CASE("widgets font_size changes text layout", "[ui][widgets][font]") {
   state large_s{ "large" };
   large_s.set(property_type::font_size, 28.0f);
   theme appearance;
-  animator animations;
 
-  auto window = std::make_unique<host_window>("widgets.font", [&](window_context&) {
+  auto window = std::make_unique<host_window>("widgets.font", [&](window_context& context) {
     auto normal = widgets::text(default_s, "A");
     auto large = widgets::text(large_s, "A");
     auto row = widgets::stack(row_s, stack_options{}, normal, large);
-    widgets::run(row, frame_context{ frame_delta, appearance, animations });
+    widgets::run(context, appearance, row);
   });
   context.ui->add_window(std::move(window));
 

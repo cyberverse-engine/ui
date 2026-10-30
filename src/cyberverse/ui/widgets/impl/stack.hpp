@@ -87,7 +87,7 @@ struct stack {
     return result;
   }
 
-  void draw(state& s, draw_context& ctx) const {
+  void draw(state& s, widget_context& ctx) const {
     const rect& bounds = s.bounds();
     if (bounds.width <= 0.0f || bounds.height <= 0.0f) {
       return;
@@ -142,7 +142,7 @@ private:
                        bool& first,
                        float& cursor_x,
                        float& cursor_y,
-                       draw_context& ctx) {
+                       widget_context& ctx) {
     if (!is_active) {
       detail::state_access::set_bounds(child.s, rect{});
       return;

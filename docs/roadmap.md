@@ -15,7 +15,7 @@ ui::host
   ├─ window B (order 300)
   └─ window C (order 200)
        └─ application draw(window_context&)
-            └─ ui::widgets::run(root, {dt, theme, animator})
+            └─ ui::widgets::run(window, theme, root)
                  └─ widgets::state + component<Impl>
 ```
 
@@ -75,7 +75,7 @@ ImGui 窗口名。id 不能为空、不能包含 `###`、不能包含嵌入的 `
 - 每帧入口：
 
 ```cpp
-widgets::run(root, {dt, theme, animator});
+widgets::run(window, theme, root);
 ```
 
 固定顺序：
@@ -83,6 +83,11 @@ widgets::run(root, {dt, theme, animator});
 ```text
 tick 输入属性 → measure → 设置 bounds → draw
 ```
+
+`widget_context` 包含 `window_context& window`、`const theme& appearance` 和
+继承的 `float opacity`。动画时间来自 `window.delta_time`，dt 为 0 时完全冻结。
+`run` 的第四个参数是整棵组件树的初始 opacity，默认 1.0。widgets 不再有独立的
+pause/speed 控制，暂停或变速由 runtime clock 负责。
 
 `measure()` 返回 `layout_size`；`state::bounds()` 使用共享 `ui::rect`。
 

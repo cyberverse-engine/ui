@@ -41,7 +41,7 @@ layout_size text_input::measure(const state& s, const theme& th, const constrain
   return layout_size{ std::max(0.0f, width), std::max(0.0f, height) };
 }
 
-void text_input::draw(state& s, draw_context& ctx) const {
+void text_input::draw(state& s, widget_context& ctx) const {
   const rect& bounds = s.bounds();
   if (value == nullptr || bounds.width <= 0.0f || bounds.height <= 0.0f) {
     return;

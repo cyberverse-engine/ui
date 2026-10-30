@@ -38,7 +38,7 @@ layout_size divider::measure(const state& s, const theme& /*th*/, const constrai
   return layout_size{ width, height };
 }
 
-void divider::draw(state& s, draw_context& ctx) const {
+void divider::draw(state& s, widget_context& ctx) const {
   const rect& bounds = s.bounds();
   const float thickness = std::isfinite(options.thickness) ? std::max(0.0f, options.thickness) : 0.0f;
   if (thickness <= 0.0f || bounds.width <= 0.0f || bounds.height <= 0.0f) {

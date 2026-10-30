@@ -126,7 +126,7 @@ struct scroll_view {
     return result;
   }
 
-  void draw(state& s, draw_context& ctx) const {
+  void draw(state& s, widget_context& ctx) const {
     const rect& bounds = s.bounds();
     if (bounds.width <= 0.0f || bounds.height <= 0.0f) {
       return;
@@ -164,7 +164,7 @@ struct scroll_view {
 private:
   template <typename Child>
   static void
-  draw_item(Child& child, const item& value, const rect& bounds, float scroll_x, float scroll_y, draw_context& ctx) {
+  draw_item(Child& child, const item& value, const rect& bounds, float scroll_x, float scroll_y, widget_context& ctx) {
     if (!value.active) {
       detail::state_access::set_bounds(child.s, rect{});
       return;

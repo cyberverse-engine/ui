@@ -24,9 +24,11 @@ not a backend-agnostic framework.
   a separate layout-result (FLIP) animation layer.
 - Explicit zero width or height must skip child measurement and drawing.
   Containers must skip zero-size children and gaps.
-- `ui::widgets` must not depend on `ui::window`, runtime, platform, or
-  render-core. It may depend only on `Diligent-Imgui` and
-  `cyberverse::animation::static_lib`.
+- Widget animation time is `widget_context.window.delta_time`; there is no
+  widget animator or separate pause/speed control.
+- `ui::widgets` may depend on `ui::window_context` through `widget_context`,
+  but must not depend on host implementation, runtime, platform, or render-core.
+  It may depend on `Diligent-Imgui` and `cyberverse::animation::static_lib`.
 - Top-level hosting is `ui::window`, owned directly by `ui::host`. A window is
   not a widget. It owns Dear ImGui window lifecycle, order, visibility, local
   rectangles, features, input capture, z-order, and exception cleanup.
@@ -48,7 +50,7 @@ not a backend-agnostic framework.
 - Every `ui::window` is a managed Dear ImGui window that fills the host
   viewport by default. `window::window_rect()` may request a local rectangle;
   the host clamps it. Windows must draw content only; they may use native
-  Dear ImGui APIs or `ui::widgets::run(root, frame_context)`.
+  Dear ImGui APIs or `ui::widgets::run(window, theme, root, opacity)`.
 - Window structure changes are only allowed between frames; throw
   `std::logic_error` during an active frame.
 - If a window throws, its ImGui window must still end, the ImGui frame must be
@@ -67,7 +69,7 @@ not a backend-agnostic framework.
   second rect/size type.
 - Widgets:
   - `state` owns id, bounds, visibility, properties, animation metadata, and the
-    event callback; it never owns the animator or child widgets.
+    event callback; it never owns child widgets or animation policy.
   - `component<Impl>` is a static wrapper; no virtual methods.
   - `run()` order is tick → measure → set bounds → draw.
   - Explicit zero dimensions skip implementation measure; zero bounds skip draw.
@@ -105,6 +107,7 @@ spreading internal API use.
 
 `ui` -> `runtime`, `platform`, `render-core`, `animation`, Dear ImGui, and
 DiligentEngine. `ui::widgets` is a header-only/template-facing component layer
-inside the same static library and must stay independent of the window runtime.
+inside the same static library; it depends on `window_context` only through
+`widget_context`, not on the host implementation.
 Applications depend on `ui`; `ui` never depends on application code or the
 sandbox demo.
