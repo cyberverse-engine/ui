@@ -80,7 +80,9 @@ not a backend-agnostic framework.
   path, not a custom text editor.
 - Single-threaded, render-thread only. Do not add hidden threads or
   asynchronous UI frames.
-- One process, one ImGui context, one `ui::frame_stage`.
+- One process, one ImGui context, one `ui::frame_stage`. The stage holds a
+  non-owning host reference; remove it from the pipeline before destroying the
+  host.
 
 ## Window z-order
 

@@ -190,7 +190,8 @@ windows when input must be blocked immediately.
 ## Ownership and threading
 
 - `ui::host` must be destroyed before the render device and platform window.
-  Remove the `ui::frame_stage` from the runtime before destroying the system.
+  The `ui::frame_stage` holds a non-owning host reference; call
+  `clear_stages()` (or remove the stage) before destroying the host.
 - One process has one Dear ImGui context. Applications must not link another
   ImGui copy or create a second context.
 - All calls are render-thread calls. There are no hidden worker threads and no

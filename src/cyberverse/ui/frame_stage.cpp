@@ -22,10 +22,10 @@ namespace cyberverse {
 namespace ui {
 
 frame_stage::frame_stage(host& ui, render_core::render_device& device)
-    : runtime::frame_stage(false), ui_{ &ui }, device_{ &device } {}
+    : runtime::frame_stage(false), host_{ ui }, device_{ &device } {}
 
 frame_stage::frame_stage(host& ui, frame_provider provider)
-    : runtime::frame_stage(false), ui_{ &ui }, provider_{ std::move(provider) } {
+    : runtime::frame_stage(false), host_{ ui }, provider_{ std::move(provider) } {
   if (!provider_) {
     throw std::invalid_argument("cyberverse::ui::frame_stage: frame provider must not be empty");
   }
@@ -36,7 +36,7 @@ frame_stage::~frame_stage() = default;
 void frame_stage::on_update(double /*dt*/, std::uint64_t /*tick*/, const runtime::frame_budget& /*budget*/) {}
 
 void frame_stage::on_render(double dt, double alpha, const runtime::frame_budget& budget) {
-  if (ui_ == nullptr || !ui_->has_visible_content()) {
+  if (!host_.has_visible_content()) {
     return;
   }
 
@@ -49,12 +49,12 @@ void frame_stage::on_render(double dt, double alpha, const runtime::frame_budget
     return;
   }
 
-  if (!ui_->begin_frame(frame, dt)) {
+  if (!host_.begin_frame(frame, dt)) {
     return;
   }
 
-  ui_->draw();
-  ui_->end_frame();
+  host_.draw();
+  host_.end_frame();
 }
 
 } // namespace ui

@@ -46,17 +46,21 @@ using frame_provider =
  * When there is no visible content the stage does not begin a render-device
  * frame and does not open an Dear ImGui frame.
  *
+ * The stage holds a non-owning reference to its host. The runtime pipeline owns
+ * the stage; the application must keep the host alive until the stage has been
+ * removed from the pipeline and destroyed.
+ *
  */
 class frame_stage final : public runtime::frame_stage {
 public:
   /**
-   * @param ui UI runtime; must outlive the stage
+   * @param ui UI host; must outlive the stage
    * @param device Device used to begin one render frame per UI pass
    */
   frame_stage(host& ui, render_core::render_device& device);
 
   /**
-   * @param ui UI runtime; must outlive the stage
+   * @param ui UI host; must outlive the stage
    * @param provider Frame-context provider; must not be empty
    * @throws std::invalid_argument If provider is empty
    */
@@ -73,7 +77,7 @@ public:
   void on_render(double dt, double alpha, const runtime::frame_budget& budget) override;
 
 private:
-  host* ui_ = nullptr;
+  host& host_;
   render_core::render_device* device_ = nullptr;
   frame_provider provider_;
 };

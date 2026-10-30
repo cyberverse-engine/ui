@@ -70,7 +70,8 @@ struct host_config {
  * - create() creates the ImGui context first, then fonts and the renderer. Any
  *   failure cleans up what was already created and throws.
  * - The host must be destroyed before the render device and platform window.
- *   Remove the ui::frame_stage from the runtime before destroying it.
+ *   Remove the ui::frame_stage from the runtime before destroying the host;
+ *   the stage holds a non-owning host reference.
  * - begin_frame() returns false when no drawable frame exists; draw() and
  *   end_frame() must not be called then. end_frame() without an active frame is
  *   a no-op.
