@@ -111,6 +111,8 @@ target_sources(cyberverse_ui_widgets2_static_lib PUBLIC
   cyberverse/ui/widgets2/rect.hpp
   cyberverse/ui/widgets2/run.hpp
   cyberverse/ui/widgets2/stack.hpp
+  cyberverse/ui/widgets2/stack_types.hpp
+  cyberverse/ui/widgets2/impl/stack.hpp
   cyberverse/ui/widgets2/state.hpp
   cyberverse/ui/widgets2/text.hpp
   cyberverse/ui/widgets2/theme.hpp
