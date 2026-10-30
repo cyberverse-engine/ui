@@ -23,7 +23,7 @@ class render_device;
 
 namespace ui {
 
-class system;
+class host;
 
 /**
  * @brief Produces the render frame context used for one UI pass
@@ -53,14 +53,14 @@ public:
    * @param ui UI runtime; must outlive the stage
    * @param device Device used to begin one render frame per UI pass
    */
-  frame_stage(system& ui, render_core::render_device& device);
+  frame_stage(host& ui, render_core::render_device& device);
 
   /**
    * @param ui UI runtime; must outlive the stage
    * @param provider Frame-context provider; must not be empty
    * @throws std::invalid_argument If provider is empty
    */
-  frame_stage(system& ui, frame_provider provider);
+  frame_stage(host& ui, frame_provider provider);
 
   ~frame_stage() override;
 
@@ -73,7 +73,7 @@ public:
   void on_render(double dt, double alpha, const runtime::frame_budget& budget) override;
 
 private:
-  system* ui_ = nullptr;
+  host* ui_ = nullptr;
   render_core::render_device* device_ = nullptr;
   frame_provider provider_;
 };

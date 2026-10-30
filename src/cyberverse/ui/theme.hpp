@@ -16,8 +16,8 @@ namespace ui {
 /**
  * @brief Built-in Dear ImGui style preset
  *
- * Applications may customize the style through system::style(); calling
- * system::set_theme() afterwards overwrites that customization.
+ * Applications may customize the style through host::style(); calling
+ * host::set_theme() afterwards overwrites that customization.
  *
  */
 enum class theme_kind {

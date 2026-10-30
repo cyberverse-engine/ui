@@ -21,8 +21,8 @@
 #include "cyberverse/platform/backends/headless/window.hpp"
 #include "cyberverse/platform/platform.hpp"
 #include "cyberverse/platform/window.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/imgui.hpp"
-#include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/window.hpp"
 #include "cyberverse/ui/window_context.hpp"
 
@@ -31,13 +31,13 @@ namespace ui {
 namespace test {
 
 /**
- * @brief Headless platform + window + UI system bundle
+ * @brief Headless platform + window + UI host bundle
  *
  */
 struct headless_context {
   std::shared_ptr<platform::platform> platform;
   std::shared_ptr<platform::window> window;
-  std::unique_ptr<system> ui;
+  std::unique_ptr<host> ui;
 
   [[nodiscard]] platform::backends::headless::window& headless_window() const {
     return *std::static_pointer_cast<platform::backends::headless::window>(window);
@@ -55,11 +55,11 @@ inline headless_context make_headless(int width = 640, int height = 480, bool wi
     context.window = context.platform->create_window(window_config);
   }
 
-  system_config ui_config;
+  host_config ui_config;
   ui_config.headless = true;
   ui_config.window = context.window.get();
   ui_config.fonts = { font_config{ .id = "default", .size = 16.0f } };
-  context.ui = system::create(ui_config);
+  context.ui = host::create(ui_config);
   return context;
 }
 

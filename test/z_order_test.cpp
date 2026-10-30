@@ -14,12 +14,12 @@
 #include <string>
 
 #include "cyberverse/ui/detail/z_order.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::system;
+using cyberverse::ui::host;
 using cyberverse::ui::detail::display_order;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
@@ -27,7 +27,7 @@ using cyberverse::ui::test::window_name;
 
 constexpr double frame_delta = 1.0 / 60.0;
 
-void add_window(system& ui, std::string id, int order) {
+void add_window(host& ui, std::string id, int order) {
   auto content = std::make_unique<fake_window>();
   content->id_value = std::move(id);
   content->order_value = order;

@@ -27,7 +27,7 @@ not a backend-agnostic framework.
 - `ui::widgets` must not depend on `ui::window`, runtime, platform, or
   render-core. It may depend only on `Diligent-Imgui` and
   `cyberverse::animation::static_lib`.
-- Top-level hosting is `ui::window`, owned directly by `ui::system`. A window is
+- Top-level hosting is `ui::window`, owned directly by `ui::host`. A window is
   not a widget. It owns Dear ImGui window lifecycle, order, visibility, local
   rectangles, features, input capture, z-order, and exception cleanup.
 - Do not add HUD/menu/diagnostics types or window-level modal/capture policies;
@@ -36,18 +36,18 @@ not a backend-agnostic framework.
 
 ## API rules
 
-- `ui::system` owns the single Dear ImGui context, the Diligent ImGui renderer,
+- `ui::host` owns the single Dear ImGui context, the Diligent ImGui renderer,
   the input bridge, fonts, theme, and the ordered window list. A non-headless
   frame binds the frame's color/depth targets and resets the scissor before the
   overlay pass.
-- One engine frame opens at most one ImGui frame. `system::begin_frame()` /
+- One engine frame opens at most one ImGui frame. `host::begin_frame()` /
   `draw()` / `end_frame()` are paired; a failed begin means no draw/end.
-- There is no separate UI layer object. `ui::system` owns windows directly.
+- There is no separate UI layer object. `ui::host` owns windows directly.
   Window `order()` controls draw order; equal orders keep insertion order.
   Window `visible()` replaces layer visibility.
-- Every `ui::window` is a managed Dear ImGui window that fills the system
+- Every `ui::window` is a managed Dear ImGui window that fills the host
   viewport by default. `window::window_rect()` may request a local rectangle;
-  the system clamps it. Windows must draw content only; they may use native
+  the host clamps it. Windows must draw content only; they may use native
   Dear ImGui APIs or `ui::widgets::run(root, frame_context)`.
 - Window structure changes are only allowed between frames; throw
   `std::logic_error` during an active frame.
@@ -57,7 +57,7 @@ not a backend-agnostic framework.
   `imgui.h`. Public widget/configuration headers stay ImGui-free. Only
   `widgets/run.hpp`, implementation `.cpp` files, and the internal
   `widgets/detail/font.hpp` / `scroll_canvas.cpp` bridge may include ImGui.
-- Window ids are system-wide unique and must not contain `###` or `/`.
+- Window ids are host-wide unique and must not contain `###` or `/`.
   Dear ImGui window names use `title###id`.
 - `ui::rect` and `ui::layout_size` are shared public geometry types. Windows
   and widgets must use the same `ui::rect`; widgets may alias it as
@@ -70,7 +70,7 @@ not a backend-agnostic framework.
   - `run()` order is tick → measure → set bounds → draw.
   - Explicit zero dimensions skip implementation measure; zero bounds skip draw.
   - `std::function` remains the one state event allocation point.
-- `ui::system` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
+- `ui::host` installs ImGui's `Platform_SetImeDataFn` on non-Windows platforms
   and forwards caret data to `platform::window::set_ime_caret()`; keep Windows on
   ImGui's native IME path. `text_input` must use ImGui's committed UTF-8 text
   path, not a custom text editor.

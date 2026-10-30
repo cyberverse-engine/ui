@@ -10,7 +10,7 @@
 - **没有独立 layer。** `system` 直接管理有序 window 列表。
 
 ```text
-ui::system
+ui::host
   ├─ window A (order 400)
   ├─ window B (order 300)
   └─ window C (order 200)
@@ -21,7 +21,7 @@ ui::system
 
 ## 2. 核心分层
 
-### 2.1 `ui::system`
+### 2.1 `ui::host`
 
 拥有：
 
@@ -118,20 +118,20 @@ tick 输入属性 → measure → 设置 bounds → draw
 
 ## 5. 帧流程
 
-1. `frame_stage::on_render` 检查 `system::has_visible_content()`；
+1. `frame_stage::on_render` 检查 `host::has_visible_content()`；
 2. 获取 `render_core::frame_context`；
-3. `system::begin_frame(frame, dt)`：
+3. `host::begin_frame(frame, dt)`：
    - 绑定 target、重置 scissor；
    - 输入送入 ImGui；
    - `ImGui::NewFrame()`；
-4. `system::draw()`：
+4. `host::draw()`：
    - 按 window `order()` 升序遍历；
    - 跳过隐藏 window；
    - 创建受管 ImGui window；
    - 计算 viewport/local rect；
    - 调用 `window::draw(window_context&)`；
    - 按绘制顺序 raise；
-5. `system::end_frame()`：
+5. `host::end_frame()`：
    - `ImGui::Render()`；
    - 一次 `RenderDrawData()`；
    - 记录 mouse/keyboard capture。

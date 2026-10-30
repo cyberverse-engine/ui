@@ -29,7 +29,7 @@ enum class glyph_range {
 };
 
 /**
- * @brief One font source configured on ui::system
+ * @brief One font source configured on ui::host
  *
  * The first entry is the default font. Entries with merge == true are merged
  * into the previous successfully loaded font, which is how a CJK fallback is
@@ -37,7 +37,7 @@ enum class glyph_range {
  *
  */
 struct font_config {
-  std::string id;                                 ///< Stable identifier used by system::font_loaded()
+  std::string id;                                 ///< Stable identifier used by host::font_loaded()
   std::filesystem::path path;                     ///< Empty means the built-in Dear ImGui font
   float size = 16.0f;                             ///< Rasterized size in logical points
   glyph_range range = glyph_range::default_latin; ///< Preloaded range

@@ -8,7 +8,7 @@ target_include_directories(cyberverse_ui_static_lib PUBLIC "${CMAKE_CURRENT_SOUR
 set(
   HEADER_FILES
   cyberverse/ui.hpp
-  cyberverse/ui/system.hpp
+  cyberverse/ui/host.hpp
     cyberverse/ui/window.hpp
   cyberverse/ui/window_context.hpp
   cyberverse/ui/frame_stage.hpp
@@ -49,7 +49,7 @@ set(
   cyberverse/ui/detail/frame_phase.hpp
     cyberverse/ui/detail/input_bridge.hpp
   cyberverse/ui/detail/key_map.hpp
-  cyberverse/ui/detail/system_impl.hpp
+  cyberverse/ui/detail/host_impl.hpp
   cyberverse/ui/detail/z_order.hpp
   cyberverse/ui/widgets/detail/box_canvas.hpp
   cyberverse/ui/widgets/detail/font.hpp
@@ -70,7 +70,7 @@ set(
 set(
   SOURCE_FILES
     cyberverse/ui/frame_stage.cpp
-  cyberverse/ui/system.cpp
+  cyberverse/ui/host.cpp
   cyberverse/ui/detail/input_bridge.cpp
   cyberverse/ui/detail/key_map.cpp
   cyberverse/ui/detail/z_order.cpp

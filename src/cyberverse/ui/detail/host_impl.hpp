@@ -1,7 +1,7 @@
 /**
- * @file system_impl.hpp
+ * @file host_impl.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief ui::system implementation details
+ * @brief ui::host implementation details
  * @version 0.3
  * @date 2026-10-27
  *
@@ -23,21 +23,21 @@
 #include <imgui.h>
 
 #include "cyberverse/ui/detail/input_bridge.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/window.hpp"
 
 namespace cyberverse {
 namespace ui {
 
 /**
- * @brief Private implementation of ui::system
+ * @brief Private implementation of ui::host
  *
  * Holds the single Dear ImGui context, the Diligent ImGui renderer, the input
  * bridge, the font cache, and the ordered window list.
  *
  */
-struct system::impl {
-  explicit impl(const system_config& config);
+struct host::impl {
+  explicit impl(const host_config& config);
   ~impl();
 
   impl(const impl&) = delete;
@@ -53,7 +53,7 @@ struct system::impl {
 
   bool begin_frame(const render_core::frame_context& frame, double delta_time);
   bool begin_frame(float display_width, float display_height, double delta_time);
-  void draw(const system& owner);
+  void draw(const host& owner);
   void end_frame();
 
   [[nodiscard]] bool frame_active() const noexcept { return frame_active_; }
@@ -83,7 +83,7 @@ private:
   void abort_frame() noexcept;
   void destroy_context() noexcept;
 
-  system_config config_;
+  host_config config_;
   ImGuiContext* context_ = nullptr;
   std::unique_ptr<Diligent::ImGuiDiligentRenderer> renderer_;
   std::string ini_path_;

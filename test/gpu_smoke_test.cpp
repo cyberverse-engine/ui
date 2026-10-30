@@ -21,13 +21,13 @@
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/imgui.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/window.hpp"
 
 namespace {
 
-using cyberverse::ui::system;
-using cyberverse::ui::system_config;
+using cyberverse::ui::host;
+using cyberverse::ui::host_config;
 using cyberverse::ui::window;
 using cyberverse::ui::window_context;
 
@@ -68,11 +68,11 @@ TEST_CASE("ui renders one overlay pass to a real swap chain", "[ui][gpu]") {
   REQUIRE(device != nullptr);
 
   {
-    system_config config;
+    host_config config;
     config.device = device.get();
     config.window = window.get();
     config.fonts = { cyberverse::ui::font_config{ .id = "default", .size = 16.0f } };
-    auto ui = system::create(config);
+    auto ui = host::create(config);
 
     ui->add_window(std::make_unique<smoke_window>());
 

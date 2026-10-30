@@ -34,7 +34,7 @@ enum class window_feature : std::uint32_t {
   transparent = 1u << 2,             ///< Do not draw the window background
   no_input = 1u << 3,                ///< Display only, never receive input
   focus_on_appearing = 1u << 4,      ///< Allow the window to take focus when shown
-  bring_to_front_on_focus = 1u << 5, ///< Allow focus to reorder the window in the system
+  bring_to_front_on_focus = 1u << 5, ///< Allow focus to reorder the window in the host
 };
 
 /**
@@ -64,14 +64,14 @@ enum class window_feature : std::uint32_t {
 struct window_context;
 
 /**
- * @brief One content window managed by a ui::system
+ * @brief One content window managed by a ui::host
  *
- * The system owns the Dear ImGui window and always sizes it to the system's
+ * The host owns the Dear ImGui window and always sizes it to the host's
  * logical viewport. draw() only paints content; it must not open a top-level
  * window or set window position/size. Use Dear ImGui's native cursor, Dummy,
  * Spacing, child-window, and draw-list APIs to position content and whitespace.
  *
- * A window must return a stable, system-unique identifier. id(), title(),
+ * A window must return a stable, host-unique identifier. id(), title(),
  * visible(), and order() are called during a frame and must be cheap and
  * side-effect free.
  *
@@ -81,10 +81,10 @@ public:
   virtual ~window() = default;
 
   /**
-   * @brief Stable, system-unique window identifier
+   * @brief Stable, host-unique window identifier
    *
    * Must not be empty and must not contain "###" or "/". The application is
-   * responsible for system-wide uniqueness; it is validated when the window is
+   * responsible for host-wide uniqueness; it is validated when the window is
    * added.
    *
    * @return std::string_view
@@ -119,15 +119,15 @@ public:
   [[nodiscard]] virtual window_feature features() const noexcept { return window_feature::none; }
 
   /**
-   * @brief Optional managed-window rectangle inside the system viewport
+   * @brief Optional managed-window rectangle inside the host viewport
    *
    * The default is nullopt, which preserves the full-viewport managed window.
    * Return a finite positive rectangle to create a local window (for example a
-   * sidebar). The system clamps the rectangle to the viewport; invalid values
+   * sidebar). The host clamps the rectangle to the viewport; invalid values
    * fall back to the full viewport. This method is called during a frame and
    * must be cheap and side-effect free.
    *
-   * @param viewport System viewport in logical points
+   * @param viewport Host viewport in logical points
    * @return std::optional<rect>
    */
   [[nodiscard]] virtual std::optional<rect> window_rect(const rect& viewport) const noexcept { return std::nullopt; }

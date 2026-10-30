@@ -28,7 +28,7 @@ Yoga and the legacy immediate-mode widget tree are no longer dependencies.
 
 ## Contents
 
-- `ui::system`: owns the ImGui context, Diligent renderer, fonts, theme, input
+- `ui::host`: owns the ImGui context, Diligent renderer, fonts, theme, input
   bridge, and ordered window list. One engine frame opens at most one ImGui
   frame.
 - `ui::window` / `ui::window_context`: one managed top-level window, its draw
@@ -158,17 +158,17 @@ field-level merge. Without an override, `run()`'s theme is used.
 
 ## Frame lifecycle
 
-1. `ui::frame_stage::on_render` checks `system::has_visible_content()`.
+1. `ui::frame_stage::on_render` checks `host::has_visible_content()`.
 2. It obtains a `render_core::frame_context` (normally
    `render_device::begin_frame`).
-3. `system::begin_frame(frame, dt)` binds the frame's color/depth targets,
+3. `host::begin_frame(frame, dt)` binds the frame's color/depth targets,
    resets the scissor, calls the Diligent renderer's `NewFrame`, feeds platform
    input into ImGui, and calls `ImGui::NewFrame()`.
-4. `system::draw()` visits visible windows from the lowest `order()` to the
+4. `host::draw()` visits visible windows from the lowest `order()` to the
    highest, creates one managed ImGui window per visible window (full viewport
    by default, or `window::window_rect()` when supplied), and calls
    `window::draw(context)`.
-5. `system::end_frame()` calls `ImGui::Render()`, submits one
+5. `host::end_frame()` calls `ImGui::Render()`, submits one
    `RenderDrawData()` pass, resets the scissor, and records
    `WantCaptureMouse` / `WantCaptureKeyboard`.
 
@@ -184,7 +184,7 @@ windows when input must be blocked immediately.
 
 ## Ownership and threading
 
-- `ui::system` must be destroyed before the render device and platform window.
+- `ui::host` must be destroyed before the render device and platform window.
   Remove the `ui::frame_stage` from the runtime before destroying the system.
 - One process has one Dear ImGui context. Applications must not link another
   ImGui copy or create a second context.
@@ -206,7 +206,7 @@ interactive windows and control input through visibility and `no_input`.
 
 ## Headless mode
 
-`system_config::headless = true` creates no GPU resources. It builds the font
+`host_config::headless = true` creates no GPU resources. It builds the font
 atlas eagerly with a test-only texture identifier and still produces Dear ImGui
 draw data, so window ordering, input mapping, and exception cleanup can
 be tested without a GPU or window. A headless system may own a platform headless

@@ -1,5 +1,5 @@
 /**
- * @file system.hpp
+ * @file host.hpp
  * @author simon2077s (simon2077s@gmail.com)
  * @brief Dear ImGui + DiligentEngine UI runtime
  * @version 0.3
@@ -39,15 +39,15 @@ namespace ui {
 class window;
 
 /**
- * @brief Creation description for ui::system
+ * @brief Creation description for ui::host
  *
  * headless == true skips Diligent rendering, creates no GPU resources, and
  * produces draw data only. Production rendering requires both device and
- * window. A headless system may still own a platform headless window to feed
+ * window. A headless host may still own a platform headless window to feed
  * deterministic input.
  *
  */
-struct system_config {
+struct host_config {
   bool headless = false;                        ///< Skip GPU rendering
   render_core::render_device* device = nullptr; ///< Required unless headless
   platform::window* window = nullptr;           ///< Required unless headless
@@ -62,42 +62,42 @@ struct system_config {
 /**
  * @brief The application-facing UI facade
  *
- * system owns the single Dear ImGui context, the Diligent ImGui renderer, the
+ * host owns the single Dear ImGui context, the Diligent ImGui renderer, the
  * input bridge, fonts, theme, and the ordered window stack. One engine frame
  * opens at most one Dear ImGui frame, and every window shares it.
  *
  * Lifecycle:
  * - create() creates the ImGui context first, then fonts and the renderer. Any
  *   failure cleans up what was already created and throws.
- * - The system must be destroyed before the render device and platform window.
+ * - The host must be destroyed before the render device and platform window.
  *   Remove the ui::frame_stage from the runtime before destroying it.
  * - begin_frame() returns false when no drawable frame exists; draw() and
  *   end_frame() must not be called then. end_frame() without an active frame is
  *   a no-op.
  * - Window structure may only change between frames; changing it during
  *   a frame is a std::logic_error.
- * - All methods must be called from the render thread. system is not
+ * - All methods must be called from the render thread. host is not
  *   thread-safe.
  *
  */
-class system {
+class host {
 public:
   /**
    * @brief Create the UI runtime
    *
    * @param config Creation description
-   * @return std::unique_ptr<system>
+   * @return std::unique_ptr<host>
    * @throws std::invalid_argument If a non-headless config lacks device/window
    * @throws std::runtime_error If the ImGui context or Diligent renderer fails
    */
-  [[nodiscard]] static std::unique_ptr<system> create(const system_config& config);
+  [[nodiscard]] static std::unique_ptr<host> create(const host_config& config);
 
-  ~system();
+  ~host();
 
-  system(const system&) = delete;
-  system(system&&) = delete;
-  system& operator=(const system&) = delete;
-  system& operator=(system&&) = delete;
+  host(const host&) = delete;
+  host(host&&) = delete;
+  host& operator=(const host&) = delete;
+  host& operator=(host&&) = delete;
 
   /**
    * @brief Add an owned UI window
@@ -110,7 +110,7 @@ public:
   window& add_window(std::unique_ptr<window> content);
 
   /**
-   * @brief Remove a window owned by the system
+   * @brief Remove a window owned by the host
    *
    * @return true when the window was owned and removed
    */
@@ -155,7 +155,7 @@ public:
   /**
    * @brief Start a headless frame with an explicit logical size
    *
-   * Only valid for a headless system.
+   * Only valid for a headless host.
    *
    * @param display_width Logical width in points; must be positive
    * @param display_height Logical height in points; must be positive
@@ -259,7 +259,7 @@ public:
 private:
   struct impl;
 
-  explicit system(std::unique_ptr<impl> impl);
+  explicit host(std::unique_ptr<impl> impl);
 
   std::unique_ptr<impl> impl_;
 };

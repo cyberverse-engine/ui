@@ -20,7 +20,7 @@
 
 #include "cyberverse/platform/backends/headless/window.hpp"
 #include "cyberverse/platform/raw_input.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/widgets.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
 #include "cyberverse/ui/window.hpp"
@@ -29,7 +29,7 @@
 
 namespace {
 
-using cyberverse::ui::system;
+using cyberverse::ui::host;
 using cyberverse::ui::window_context;
 using cyberverse::ui::test::make_headless;
 
@@ -104,13 +104,13 @@ private:
   std::function<void(window_context&)> draw_;
 };
 
-void run_frame(system& ui) {
+void run_frame(host& ui) {
   REQUIRE(ui.begin_frame(width, height, frame_delta));
   ui.draw();
   ui.end_frame();
 }
 
-void click(cyberverse::platform::backends::headless::window& window, system& ui, const rect& target) {
+void click(cyberverse::platform::backends::headless::window& window, host& ui, const rect& target) {
   const auto left = cyberverse::platform::mouse_button::left;
   window.inject_mouse_move(target.x + target.width * 0.5f, target.y + target.height * 0.5f);
   window.inject_mouse_button_down(left);

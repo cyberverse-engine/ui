@@ -1,5 +1,5 @@
 /**
- * @file system.cpp
+ * @file host.cpp
  * @author simon2077s (simon2077s@gmail.com)
  * @brief Dear ImGui + DiligentEngine UI runtime implementation
  * @version 0.3
@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2026
  *
  */
-#include "cyberverse/ui/detail/system_impl.hpp"
+#include "cyberverse/ui/detail/host_impl.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -116,11 +116,11 @@ private:
 
 } // namespace
 
-system::impl::impl(const system_config& config)
+host::impl::impl(const host_config& config)
     : config_{ config }, device_{ config.device }, window_{ config.window }, headless_{ config.headless } {
   if (!headless_ && (device_ == nullptr || window_ == nullptr)) {
     throw std::invalid_argument(
-        "cyberverse::ui::system: a non-headless system requires both a render device and a platform window");
+        "cyberverse::ui::host: a non-headless host requires both a render device and a platform window");
   }
 
   if (window_ != nullptr) {
@@ -154,17 +154,17 @@ system::impl::impl(const system_config& config)
   }
 }
 
-system::impl::~impl() {
+host::impl::~impl() {
   windows_.clear();
   draw_order_.clear();
   window_signature_.clear();
   destroy_context();
 }
 
-void system::impl::create_context() {
+void host::impl::create_context() {
   context_ = ImGui::CreateContext();
   if (context_ == nullptr) {
-    throw std::runtime_error("cyberverse::ui::system: failed to create the Dear ImGui context");
+    throw std::runtime_error("cyberverse::ui::host: failed to create the Dear ImGui context");
   }
   ImGui::SetCurrentContext(context_);
 
@@ -189,7 +189,7 @@ void system::impl::create_context() {
   install_ime_hook();
 }
 
-void system::impl::install_ime_hook() {
+void host::impl::install_ime_hook() {
   if (window_ == nullptr) {
     return;
   }
@@ -207,7 +207,7 @@ void system::impl::install_ime_hook() {
 #endif
 }
 
-void system::impl::destroy_context() noexcept {
+void host::impl::destroy_context() noexcept {
   if (context_ == nullptr) {
     detail::set_frame_in_progress(false);
     return;
@@ -230,7 +230,7 @@ void system::impl::destroy_context() noexcept {
   detail::set_frame_in_progress(false);
 }
 
-void system::impl::apply_theme(theme_kind theme) {
+void host::impl::apply_theme(theme_kind theme) {
   switch (theme) {
   case theme_kind::light:
     ImGui::StyleColorsLight();
@@ -243,7 +243,7 @@ void system::impl::apply_theme(theme_kind theme) {
   ImGui::GetStyle().WindowMinSize = ImVec2{ 1.0f, 1.0f };
 }
 
-const ImWchar* system::impl::ranges_for(const font_config& config) {
+const ImWchar* host::impl::ranges_for(const font_config& config) {
   switch (config.range) {
   case glyph_range::chinese_simplified_common:
     return ImGui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon();
@@ -275,7 +275,7 @@ const ImWchar* system::impl::ranges_for(const font_config& config) {
   }
 }
 
-void system::impl::load_fonts() {
+void host::impl::load_fonts() {
   ImGuiIO& io = ImGui::GetIO();
   ImFontAtlas* atlas = io.Fonts;
 
@@ -325,7 +325,7 @@ void system::impl::load_fonts() {
   if (first_loaded == nullptr) {
     ImFont* fallback = atlas->AddFontDefault();
     if (fallback == nullptr) {
-      throw std::runtime_error("cyberverse::ui::system: failed to create the default Dear ImGui font");
+      throw std::runtime_error("cyberverse::ui::host: failed to create the default Dear ImGui font");
     }
     first_loaded = fallback;
     font_loaded_["default"] = true;
@@ -341,30 +341,29 @@ void system::impl::load_fonts() {
   }
 }
 
-window& system::impl::add_window(std::unique_ptr<window> content) {
+window& host::impl::add_window(std::unique_ptr<window> content) {
   detail::require_between_frames("add a UI window");
   if (content == nullptr) {
-    throw std::invalid_argument("cyberverse::ui::system: window must not be null");
+    throw std::invalid_argument("cyberverse::ui::host: window must not be null");
   }
   const std::string_view id = content->id();
   if (id.empty()) {
-    throw std::invalid_argument("cyberverse::ui::system: a window id must not be empty");
+    throw std::invalid_argument("cyberverse::ui::host: a window id must not be empty");
   }
   if (id.find("###") != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::system: a window id must not contain \"###\"");
+    throw std::invalid_argument("cyberverse::ui::host: a window id must not contain \"###\"");
   }
   if (id.find('/') != std::string_view::npos) {
-    throw std::invalid_argument("cyberverse::ui::system: a window id must not contain '/'");
+    throw std::invalid_argument("cyberverse::ui::host: a window id must not contain '/'");
   }
   if (find_window(id) != nullptr) {
-    throw std::invalid_argument(std::string{ "cyberverse::ui::system: duplicate window id '" } + std::string{ id } +
-                                "'");
+    throw std::invalid_argument(std::string{ "cyberverse::ui::host: duplicate window id '" } + std::string{ id } + "'");
   }
   windows_.push_back(std::move(content));
   return *windows_.back();
 }
 
-bool system::impl::remove_window(window& content) noexcept {
+bool host::impl::remove_window(window& content) noexcept {
   if (detail::frame_in_progress()) {
     return false;
   }
@@ -378,14 +377,14 @@ bool system::impl::remove_window(window& content) noexcept {
   return true;
 }
 
-void system::impl::clear_windows() {
+void host::impl::clear_windows() {
   detail::require_between_frames("clear UI windows");
   windows_.clear();
   draw_order_.clear();
   window_signature_.clear();
 }
 
-window* system::impl::find_window(std::string_view id) noexcept {
+window* host::impl::find_window(std::string_view id) noexcept {
   for (const auto& content : windows_) {
     if (content != nullptr && content->id() == id) {
       return content.get();
@@ -394,13 +393,13 @@ window* system::impl::find_window(std::string_view id) noexcept {
   return nullptr;
 }
 
-bool system::impl::has_visible_content() const noexcept {
+bool host::impl::has_visible_content() const noexcept {
   return std::any_of(windows_.begin(), windows_.end(), [](const auto& content) {
     return content != nullptr && content->visible();
   });
 }
 
-bool system::impl::begin_frame(const render_core::frame_context& frame, double delta_time) {
+bool host::impl::begin_frame(const render_core::frame_context& frame, double delta_time) {
   if (context_ == nullptr || frame_active_) {
     return false;
   }
@@ -477,7 +476,7 @@ bool system::impl::begin_frame(const render_core::frame_context& frame, double d
   return true;
 }
 
-bool system::impl::begin_frame(float display_width, float display_height, double delta_time) {
+bool host::impl::begin_frame(float display_width, float display_height, double delta_time) {
   if (context_ == nullptr || frame_active_ || !headless_) {
     return false;
   }
@@ -506,14 +505,14 @@ bool system::impl::begin_frame(float display_width, float display_height, double
   return true;
 }
 
-void system::impl::update_input() {
+void host::impl::update_input() {
   if (window_ == nullptr) {
     return;
   }
   input_.update(ImGui::GetIO(), window_->input_state());
 }
 
-void system::impl::rebuild_draw_order() {
+void host::impl::rebuild_draw_order() {
   bool changed = window_signature_.size() != windows_.size();
   if (!changed) {
     for (std::size_t index = 0; index < windows_.size(); ++index) {
@@ -541,7 +540,7 @@ void system::impl::rebuild_draw_order() {
   });
 }
 
-ImGuiWindowFlags system::impl::window_flags(const window& content) const {
+ImGuiWindowFlags host::impl::window_flags(const window& content) const {
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
@@ -569,7 +568,7 @@ ImGuiWindowFlags system::impl::window_flags(const window& content) const {
   return flags;
 }
 
-void system::impl::build_window_name(const window& content) {
+void host::impl::build_window_name(const window& content) {
   const std::string_view title = content.title();
   const std::string_view id = content.id();
 
@@ -579,7 +578,7 @@ void system::impl::build_window_name(const window& content) {
   window_name_.append(id.data(), id.size());
 }
 
-void system::impl::draw(const system& owner) {
+void host::impl::draw(const host& owner) {
   if (context_ == nullptr || !frame_active_) {
     return;
   }
@@ -599,7 +598,7 @@ void system::impl::draw(const system& owner) {
         continue;
       }
       if (content->title().find("###") != std::string_view::npos) {
-        throw std::invalid_argument("cyberverse::ui::system: a window title must not contain \"###\"");
+        throw std::invalid_argument("cyberverse::ui::host: a window title must not contain \"###\"");
       }
 
       build_window_name(*content);
@@ -624,7 +623,7 @@ void system::impl::draw(const system& owner) {
   }
 }
 
-void system::impl::end_frame() {
+void host::impl::end_frame() {
   if (context_ == nullptr || !frame_active_) {
     return;
   }
@@ -652,7 +651,7 @@ void system::impl::end_frame() {
   }
 }
 
-void system::impl::abort_frame() noexcept {
+void host::impl::abort_frame() noexcept {
   if (context_ != nullptr) {
     ImGui::SetCurrentContext(context_);
     if (frame_active_) {
@@ -664,7 +663,7 @@ void system::impl::abort_frame() noexcept {
   detail::set_frame_in_progress(false);
 }
 
-void system::impl::reload_fonts() {
+void host::impl::reload_fonts() {
   detail::require_between_frames("reload UI fonts");
   if (context_ == nullptr) {
     return;
@@ -674,12 +673,12 @@ void system::impl::reload_fonts() {
   load_fonts();
 }
 
-bool system::impl::font_loaded(std::string_view id) const noexcept {
+bool host::impl::font_loaded(std::string_view id) const noexcept {
   const auto iterator = font_loaded_.find(std::string{ id });
   return iterator != font_loaded_.end() && iterator->second;
 }
 
-void system::impl::set_theme(theme_kind theme) {
+void host::impl::set_theme(theme_kind theme) {
   detail::require_between_frames("change the UI theme");
   if (context_ == nullptr) {
     return;
@@ -688,81 +687,81 @@ void system::impl::set_theme(theme_kind theme) {
   apply_theme(theme);
 }
 
-void system::impl::set_scale(float scale) {
+void host::impl::set_scale(float scale) {
   detail::require_between_frames("change the UI scale");
   if (!(std::isfinite(scale) && scale > 0.0f)) {
-    throw std::invalid_argument("cyberverse::ui::system: scale must be a finite positive number");
+    throw std::invalid_argument("cyberverse::ui::host: scale must be a finite positive number");
   }
   scale_ = scale;
   manual_scale_ = true;
 }
 
-ImGuiIO& system::impl::io() noexcept {
+ImGuiIO& host::impl::io() noexcept {
   if (context_ != nullptr) {
     ImGui::SetCurrentContext(context_);
   }
   return ImGui::GetIO();
 }
 
-ImGuiStyle& system::impl::style() noexcept {
+ImGuiStyle& host::impl::style() noexcept {
   if (context_ != nullptr) {
     ImGui::SetCurrentContext(context_);
   }
   return ImGui::GetStyle();
 }
 
-system::system(std::unique_ptr<impl> impl) : impl_{ std::move(impl) } {}
+host::host(std::unique_ptr<impl> impl) : impl_{ std::move(impl) } {}
 
-system::~system() = default;
+host::~host() = default;
 
-std::unique_ptr<system> system::create(const system_config& config) {
+std::unique_ptr<host> host::create(const host_config& config) {
   auto implementation = std::make_unique<impl>(config);
-  return std::unique_ptr<system>(new system(std::move(implementation)));
+  return std::unique_ptr<host>(new host(std::move(implementation)));
 }
 
-window& system::add_window(std::unique_ptr<window> content) { return impl_->add_window(std::move(content)); }
+window& host::add_window(std::unique_ptr<window> content) { return impl_->add_window(std::move(content)); }
 
-bool system::remove_window(window& content) noexcept { return impl_->remove_window(content); }
+bool host::remove_window(window& content) noexcept { return impl_->remove_window(content); }
 
-void system::clear_windows() { impl_->clear_windows(); }
+void host::clear_windows() { impl_->clear_windows(); }
 
-window* system::find_window(std::string_view id) noexcept { return impl_->find_window(id); }
+window* host::find_window(std::string_view id) noexcept { return impl_->find_window(id); }
 
-bool system::has_visible_content() const noexcept { return impl_->has_visible_content(); }
+bool host::has_visible_content() const noexcept { return impl_->has_visible_content(); }
 
-bool system::begin_frame(const render_core::frame_context& frame, double delta_time) {
+bool host::begin_frame(const render_core::frame_context& frame, double delta_time) {
   return impl_->begin_frame(frame, delta_time);
 }
 
-bool system::begin_frame(float display_width, float display_height, double delta_time) {
+bool host::begin_frame(float display_width, float display_height, double delta_time) {
   return impl_->begin_frame(display_width, display_height, delta_time);
 }
 
-void system::draw() { impl_->draw(*this); }
+void host::draw() { impl_->draw(*this); }
 
-void system::end_frame() { impl_->end_frame(); }
+void host::end_frame() { impl_->end_frame(); }
 
-bool system::frame_active() const noexcept { return impl_->frame_active(); }
+bool host::frame_active() const noexcept { return impl_->frame_active(); }
 
-bool system::wants_mouse() const noexcept { return impl_->wants_mouse(); }
+bool host::wants_mouse() const noexcept { return impl_->wants_mouse(); }
 
-bool system::wants_keyboard() const noexcept { return impl_->wants_keyboard(); }
+bool host::wants_keyboard() const noexcept { return impl_->wants_keyboard(); }
 
-void system::reload_fonts() { impl_->reload_fonts(); }
+void host::reload_fonts() { impl_->reload_fonts(); }
 
-bool system::font_loaded(std::string_view id) const noexcept { return impl_->font_loaded(id); }
+bool host::font_loaded(std::string_view id) const noexcept { return impl_->font_loaded(id); }
 
-void system::set_theme(theme_kind theme) { impl_->set_theme(theme); }
+void host::set_theme(theme_kind theme) { impl_->set_theme(theme); }
 
-void system::set_scale(float scale) { impl_->set_scale(scale); }
+void host::set_scale(float scale) { impl_->set_scale(scale); }
 
-float system::scale() const noexcept { return impl_->scale(); }
+float host::scale() const noexcept { return impl_->scale(); }
 
-ImGuiContext* system::imgui_context() noexcept { return impl_->imgui_context(); }
+ImGuiContext* host::imgui_context() noexcept { return impl_->imgui_context(); }
 
-ImGuiIO& system::io() noexcept { return impl_->io(); }
+ImGuiIO& host::io() noexcept { return impl_->io(); }
 
-ImGuiStyle& system::style() noexcept { return impl_->style(); }
+ImGuiStyle& host::style() noexcept { return impl_->style(); }
 
 } // namespace ui
 } // namespace cyberverse

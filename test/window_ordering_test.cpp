@@ -15,13 +15,13 @@
 #include <string>
 #include <vector>
 
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/window.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::system;
+using cyberverse::ui::host;
 using cyberverse::ui::window_context;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
@@ -30,7 +30,7 @@ constexpr float width = 320.0f;
 constexpr float height = 200.0f;
 constexpr double frame_delta = 1.0 / 60.0;
 
-fake_window& add_recording_window(system& ui, std::string id, int order, std::vector<std::string>& draw_order) {
+fake_window& add_recording_window(host& ui, std::string id, int order, std::vector<std::string>& draw_order) {
   auto content = std::make_unique<fake_window>();
   content->id_value = std::move(id);
   content->order_value = order;
@@ -40,7 +40,7 @@ fake_window& add_recording_window(system& ui, std::string id, int order, std::ve
   return static_cast<fake_window&>(ui.add_window(std::move(content)));
 }
 
-void render(system& ui) {
+void render(host& ui) {
   REQUIRE(ui.begin_frame(width, height, frame_delta));
   ui.draw();
   ui.end_frame();

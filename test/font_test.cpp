@@ -16,17 +16,17 @@
 #include "cyberverse/platform/backends/headless/window.hpp"
 #include "cyberverse/platform/platform.hpp"
 #include "cyberverse/ui/font.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 
 namespace {
 
 using cyberverse::ui::font_config;
 using cyberverse::ui::glyph_range;
-using cyberverse::ui::system;
-using cyberverse::ui::system_config;
+using cyberverse::ui::host;
+using cyberverse::ui::host_config;
 
-system_config headless_config() {
-  system_config config;
+host_config headless_config() {
+  host_config config;
   config.headless = true;
   return config;
 }
@@ -34,15 +34,15 @@ system_config headless_config() {
 } // namespace
 
 TEST_CASE("the configured default font loads in headless mode", "[ui][font]") {
-  system_config config = headless_config();
+  host_config config = headless_config();
   config.fonts = { font_config{ .id = "default", .size = 18.0f } };
 
-  auto ui = system::create(config);
+  auto ui = host::create(config);
   REQUIRE(ui->font_loaded("default"));
 }
 
 TEST_CASE("missing font files are reported instead of failing creation", "[ui][font]") {
-  system_config config = headless_config();
+  host_config config = headless_config();
   config.fonts = {
     font_config{ .id = "default", .size = 16.0f },
     font_config{ .id = "cjk",
@@ -52,13 +52,13 @@ TEST_CASE("missing font files are reported instead of failing creation", "[ui][f
                  .merge = true },
   };
 
-  auto ui = system::create(config);
+  auto ui = host::create(config);
   REQUIRE(ui->font_loaded("default"));
   REQUIRE_FALSE(ui->font_loaded("cjk"));
 }
 
 TEST_CASE("invalid custom glyph ranges do not break font creation", "[ui][font]") {
-  system_config config = headless_config();
+  host_config config = headless_config();
   config.fonts = { font_config{
       .id = "custom",
       .size = 16.0f,
@@ -66,6 +66,6 @@ TEST_CASE("invalid custom glyph ranges do not break font creation", "[ui][font]"
       .glyphs = { static_cast<char32_t>('A'), static_cast<char32_t>('A'), static_cast<char32_t>('Z') },
   } };
 
-  auto ui = system::create(config);
+  auto ui = host::create(config);
   REQUIRE(ui->font_loaded("custom"));
 }

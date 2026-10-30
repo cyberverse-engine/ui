@@ -17,7 +17,7 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/frame_stage.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "cyberverse/ui/window.hpp"
 #include "support/test_ui.hpp"
 
@@ -27,7 +27,7 @@ using cyberverse::render_core::frame_context;
 using cyberverse::render_core::viewport;
 using cyberverse::runtime::frame_budget;
 using cyberverse::ui::frame_stage;
-using cyberverse::ui::system;
+using cyberverse::ui::host;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
 

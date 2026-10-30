@@ -20,7 +20,7 @@ add_executable(
   window_test.cpp
   widgets_test.cpp
   frame_stage_test.cpp
-  system_test.cpp
+  host_test.cpp
   z_order_test.cpp
 )
 

@@ -10,7 +10,7 @@
  */
 #include <catch2/catch_test_macros.hpp>
 
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 #include "support/test_ui.hpp"
 
 namespace {

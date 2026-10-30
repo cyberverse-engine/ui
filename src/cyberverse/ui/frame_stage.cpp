@@ -16,15 +16,15 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
-#include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/host.hpp"
 
 namespace cyberverse {
 namespace ui {
 
-frame_stage::frame_stage(system& ui, render_core::render_device& device)
+frame_stage::frame_stage(host& ui, render_core::render_device& device)
     : runtime::frame_stage(false), ui_{ &ui }, device_{ &device } {}
 
-frame_stage::frame_stage(system& ui, frame_provider provider)
+frame_stage::frame_stage(host& ui, frame_provider provider)
     : runtime::frame_stage(false), ui_{ &ui }, provider_{ std::move(provider) } {
   if (!provider_) {
     throw std::invalid_argument("cyberverse::ui::frame_stage: frame provider must not be empty");

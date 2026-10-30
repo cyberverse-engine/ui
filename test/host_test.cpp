@@ -1,7 +1,7 @@
 /**
- * @file system_test.cpp
+ * @file host_test.cpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief UI system lifecycle tests
+ * @brief UI host lifecycle tests
  * @version 0.3
  * @date 2026-10-27
  *
@@ -18,15 +18,15 @@
 
 namespace {
 
-using cyberverse::ui::system;
-using cyberverse::ui::system_config;
+using cyberverse::ui::host;
+using cyberverse::ui::host_config;
 using cyberverse::ui::window_context;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
 
 } // namespace
 
-TEST_CASE("headless system pairs begin and end", "[ui][system]") {
+TEST_CASE("headless host pairs begin and end", "[ui][host]") {
   auto context = make_headless();
   REQUIRE_FALSE(context.ui->frame_active());
 
@@ -43,7 +43,7 @@ TEST_CASE("headless system pairs begin and end", "[ui][system]") {
   REQUIRE_FALSE(context.ui->frame_active());
 }
 
-TEST_CASE("headless begin_frame rejects unusable sizes", "[ui][system]") {
+TEST_CASE("headless begin_frame rejects unusable sizes", "[ui][host]") {
   auto context = make_headless();
 
   REQUIRE_FALSE(context.ui->begin_frame(0.0f, 100.0f, 1.0 / 60.0));
@@ -53,12 +53,12 @@ TEST_CASE("headless begin_frame rejects unusable sizes", "[ui][system]") {
   REQUIRE_FALSE(context.ui->frame_active());
 }
 
-TEST_CASE("a non-headless system requires a device and window", "[ui][system]") {
-  system_config config;
-  REQUIRE_THROWS_AS(system::create(config), std::invalid_argument);
+TEST_CASE("a non-headless host requires a device and window", "[ui][host]") {
+  host_config config;
+  REQUIRE_THROWS_AS(host::create(config), std::invalid_argument);
 }
 
-TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
+TEST_CASE("headless frame produces draw data exactly once", "[ui][host]") {
   auto context = make_headless();
   auto content = std::make_unique<fake_window>();
   content->on_draw = [](window_context&) {
@@ -78,7 +78,7 @@ TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
   REQUIRE(draw_data->TotalVtxCount > 0);
 }
 
-TEST_CASE("destroying a system with an active frame is safe", "[ui][system]") {
+TEST_CASE("destroying a host with an active frame is safe", "[ui][host]") {
   {
     auto context = make_headless();
     REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
@@ -87,7 +87,7 @@ TEST_CASE("destroying a system with an active frame is safe", "[ui][system]") {
   SUCCEED();
 }
 
-TEST_CASE("structural mutations during a frame are rejected", "[ui][system]") {
+TEST_CASE("structural mutations during a frame are rejected", "[ui][host]") {
   auto context = make_headless();
   auto content = std::make_unique<fake_window>();
   fake_window* content_ptr = content.get();
@@ -100,7 +100,7 @@ TEST_CASE("structural mutations during a frame are rejected", "[ui][system]") {
   context.ui->end_frame();
 }
 
-TEST_CASE("capture flags default to false and font ids are reported", "[ui][system]") {
+TEST_CASE("capture flags default to false and font ids are reported", "[ui][host]") {
   auto context = make_headless();
   REQUIRE_FALSE(context.ui->wants_mouse());
   REQUIRE_FALSE(context.ui->wants_keyboard());

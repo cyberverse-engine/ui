@@ -17,18 +17,18 @@
 namespace cyberverse {
 namespace ui {
 
-class system;
+class host;
 
 /**
  * @brief Frame information handed to window::draw()
  *
  * The context is valid only for the duration of the draw() call and must not be
- * stored. bounds is the logical viewport of the system; the managed window
+ * stored. bounds is the logical viewport of the host; the managed window
  * covers exactly that rectangle.
  *
  */
 struct window_context {
-  const system& ui;              ///< Owning UI runtime
+  const host& ui;                ///< Owning UI runtime
   rect bounds{};                 ///< Logical viewport rectangle
   double delta_time = 0.0;       ///< Logical frame delta in seconds; 0 when the clock is paused
   std::uint64_t frame_index = 0; ///< Monotonic UI frame index
