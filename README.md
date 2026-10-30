@@ -127,11 +127,38 @@ control; pause or time-scale the runtime clock instead.
 
 - `text`, `button`;
 - `checkbox`, `radio` with caller-owned bool/int values;
+- `radio_group` with caller-owned selected index, radio/button rendering, and
+  horizontal/vertical stack layout;
 - `text_input` with caller-owned `std::string`;
 - `divider` (horizontal/vertical);
 - `stack`, no-wrap `flexbox`, and `scroll_view` with simultaneous vertical and
   horizontal scrolling;
 - `box`, a styled single-child container replacing the old `widgets::panel`.
+
+`radio_group` takes a caller-owned `int& selected` (an index), copies its labels,
+and emits `value_changed` on the group state after updating `selected`. The
+selected variable must outlive the group:
+
+```cpp
+int quality = 1;
+group_s.on_event([&](widgets::state&, widgets::event_type event) {
+  if (event == widgets::event_type::value_changed) {
+    use(quality);
+  }
+});
+
+auto group = widgets::radio_group(
+    group_s,
+    quality,
+    { .type = widgets::radio_group_type::button,
+      .layout = { .direction = widgets::stack_direction::horizontal, .gap = 8.0f } },
+    "Low",
+    "Medium",
+    "High");
+```
+
+Layout changes derived from a click are applied on the next frame because the
+selected index changes during draw.
 
 Visibility is stored in state: `visible`, `invisible` (layout retained, not
 drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`,

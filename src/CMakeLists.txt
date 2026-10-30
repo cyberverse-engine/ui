@@ -30,6 +30,8 @@ set(
   cyberverse/ui/widgets/flexbox.hpp
   cyberverse/ui/widgets/property.hpp
   cyberverse/ui/widgets/radio.hpp
+  cyberverse/ui/widgets/radio_group.hpp
+  cyberverse/ui/widgets/radio_group_types.hpp
   cyberverse/ui/widgets/run.hpp
   cyberverse/ui/widgets/scroll_view.hpp
   cyberverse/ui/widgets/scroll_view_types.hpp

@@ -18,7 +18,7 @@ not a backend-agnostic framework.
   Do not add virtual widget bases, type erasure, `std::vector` child storage, or
   dynamic child ownership. The only intentional `std::function` is the state
   event handler.
-- `ui::widgets` v1 includes `text`, `button`, `checkbox`, `radio`, `text_input`,
+- `ui::widgets` v1 includes `text`, `button`, `checkbox`, `radio`, `radio_group`, `text_input`,
   `divider`, `stack`, no-wrap `flexbox`, dual-axis `scroll_view`, and `box`.
   Flex item sizing is driven by animated width/height/flex_* inputs; do not add
   a separate layout-result (FLIP) animation layer.

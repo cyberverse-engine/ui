@@ -17,6 +17,7 @@
 
 #include "cyberverse/ui/widgets/component.hpp"
 #include "cyberverse/ui/widgets/context.hpp"
+#include "cyberverse/ui/widgets/detail/stack_layout.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
 #include "cyberverse/ui/widgets/stack_types.hpp"
 #include "cyberverse/ui/widgets/theme.hpp"
@@ -57,27 +58,7 @@ struct stack {
         },
         children);
 
-    const bool horizontal = options.direction == stack_direction::horizontal;
-    float main = 0.0f;
-    float cross = 0.0f;
-    std::size_t active_count = 0;
-
-    for (std::size_t i = 0; i < count; ++i) {
-      if (!active[i]) {
-        continue;
-      }
-      if (active_count > 0) {
-        main += std::max(0.0f, options.gap);
-      }
-      main += horizontal ? sizes[i].width : sizes[i].height;
-      cross = std::max(cross, horizontal ? sizes[i].height : sizes[i].width);
-      ++active_count;
-    }
-
-    main += horizontal ? options.padding.left + options.padding.right : options.padding.top + options.padding.bottom;
-    cross += horizontal ? options.padding.top + options.padding.bottom : options.padding.left + options.padding.right;
-
-    layout_size result = horizontal ? layout_size{ main, cross } : layout_size{ cross, main };
+    layout_size result = detail::measure_stack(options, sizes, active);
     if (s.has(property_type::width)) {
       result.width = std::max(0.0f, s.value(property_type::width));
     }
@@ -108,16 +89,13 @@ struct stack {
         },
         children);
 
-    const bool horizontal = options.direction == stack_direction::horizontal;
-    const float gap = std::max(0.0f, options.gap);
-    float cursor_x = bounds.x + options.padding.left;
-    float cursor_y = bounds.y + options.padding.top;
-    bool first = true;
-
+    const std::array<rect, count> placements = detail::place_stack(options, sizes, active, bounds);
     index = 0;
     std::apply(
         [&](auto&... child) {
-          ((draw_one(child, sizes[index], active[index], horizontal, gap, first, cursor_x, cursor_y, ctx), ++index),
+          ((detail::state_access::set_bounds(child.s, placements[index]),
+            active[index] ? child.draw(ctx) : void(),
+            ++index),
            ...);
         },
         children);
@@ -130,42 +108,6 @@ struct stack {
           (child.visit_states(f), ...);
         },
         children);
-  }
-
-private:
-  template <typename Child>
-  static void draw_one(Child& child,
-                       const layout_size& child_size,
-                       bool is_active,
-                       bool horizontal,
-                       float gap,
-                       bool& first,
-                       float& cursor_x,
-                       float& cursor_y,
-                       widget_context& ctx) {
-    if (!is_active) {
-      detail::state_access::set_bounds(child.s, rect{});
-      return;
-    }
-
-    if (!first) {
-      if (horizontal) {
-        cursor_x += gap;
-      } else {
-        cursor_y += gap;
-      }
-    }
-    first = false;
-
-    const rect child_bounds{ cursor_x, cursor_y, child_size.width, child_size.height };
-    detail::state_access::set_bounds(child.s, child_bounds);
-    child.draw(ctx);
-
-    if (horizontal) {
-      cursor_x += child_size.width;
-    } else {
-      cursor_y += child_size.height;
-    }
   }
 };
 

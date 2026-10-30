@@ -98,6 +98,7 @@ pause/speed 控制，暂停或变速由 runtime clock 负责。
 | `text` | 文本，支持字号、颜色、换行符 |
 | `button` | 原生 ImGui 按钮，点击发 `click` |
 | `checkbox` / `radio` | 外部 bool/int，值变化发 `value_changed` |
+| `radio_group` | 外部 selected 下标，radio/button 两种样式，水平/垂直 stack 布局 |
 | `text_input` | 外部 `std::string`，原生单行输入 |
 | `divider` | 水平/垂直分隔线 |
 | `stack` | 编译期固定子项的一维排布 |

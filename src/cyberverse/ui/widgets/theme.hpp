@@ -49,6 +49,16 @@ struct button_style {
 };
 
 /**
+ * @brief Selected button appearance in a radio group
+ *
+ */
+struct radio_group_style {
+  color selected_background{ 0.30f, 0.43f, 0.57f, 1.0f };
+  color selected_border{ 0.42f, 0.72f, 0.94f, 1.0f };
+  color selected_text{ 0.96f, 0.98f, 1.0f, 1.0f };
+};
+
+/**
  * @brief Checkbox and radio appearance
  *
  */
@@ -121,6 +131,7 @@ struct theme {
   button_style button;
   choice_style checkbox;
   choice_style radio;
+  radio_group_style radio_group;
   text_input_style text_input;
   box_style box;
   scroll_view_style scroll_view;

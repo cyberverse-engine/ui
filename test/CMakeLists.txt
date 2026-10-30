@@ -18,6 +18,7 @@ add_executable(
   input_bridge_test.cpp
   window_ordering_test.cpp
   window_test.cpp
+  radio_group_test.cpp
   widgets_test.cpp
   frame_stage_test.cpp
   host_test.cpp
