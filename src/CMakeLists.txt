@@ -29,6 +29,7 @@ set(
   cyberverse/ui/widgets/radio.hpp
   cyberverse/ui/widgets/text_input.hpp
   cyberverse/ui/widgets/native.hpp
+  cyberverse/ui/widgets/divider.hpp
 )
 
 set(
@@ -64,6 +65,7 @@ set(
   cyberverse/ui/widgets/radio.cpp
   cyberverse/ui/widgets/text_input.cpp
   cyberverse/ui/widgets/native.cpp
+  cyberverse/ui/widgets/divider.cpp
   cyberverse/ui/widgets/detail/style_resolver.cpp
   cyberverse/ui/widgets/detail/layout_engine.cpp
 )

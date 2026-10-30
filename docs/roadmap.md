@@ -136,6 +136,7 @@ Yoga（PRIVATE）──┘
 | `panel` | flexbox + draw list | 背景、实线边框、圆角、裁剪子项 |
 | `scroll_view` | flexbox + `ImGui::BeginChild` | 原生滚动/裁剪，内部列布局 |
 | `collapse_group` | 轻量 header + 内部 flexbox | 应用持有 open 状态 |
+| `divider` | draw list 细线 | 水平/垂直，固定厚度，交叉轴 stretch |
 | `text` | `ImGui::CalcTextSize` / draw list | 多行、自动换行、裁剪 |
 | `button` | `ImGui::Button` | 原生按钮 |
 | `checkbox` | `ImGui::Checkbox` | 外部 `bool` 状态 |
@@ -258,8 +259,8 @@ M5 待做：
 
 - Yoga v3.2.1 依赖和私有链接；
 - `ui::widgets` 基础类型、尺寸模型、主题解析、Yoga 布局引擎；
-- flexbox、panel、scroll_view、collapse_group、text、button、checkbox、radio、
-  text_input、native；
+- flexbox、panel、scroll_view、collapse_group、divider、text、button、checkbox、
+  radio、text_input、native；
 - IME 光标钩子（platform + ImGui callback）；
 - 测试：固定/fit/stretch、gap/padding、wrap、native 测量、主题、按钮/复选框/单选交互、
   scroll/collapse、CJK 输入、IME caret；

@@ -23,6 +23,7 @@ namespace detail {
 
 enum class style_kind {
   panel,
+  divider,
   button,
   checkbox,
   radio,

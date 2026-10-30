@@ -63,6 +63,7 @@ struct widget_style {
  */
 struct theme {
   widget_style panel;
+  widget_style divider;
   widget_style button;
   widget_style checkbox;
   widget_style radio;

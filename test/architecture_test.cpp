@@ -33,5 +33,6 @@ TEST_CASE("ui public headers expose the layered model", "[ui][architecture]") {
   STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::flexbox>);
   STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::text_input>);
   STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::native>);
+  STATIC_REQUIRE(std::is_base_of_v<cyberverse::ui::widgets::widget, cyberverse::ui::widgets::divider>);
   SUCCEED();
 }

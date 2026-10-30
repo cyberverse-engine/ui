@@ -30,6 +30,8 @@ const widget_style& theme_style(const theme& appearance, style_kind kind) noexce
   switch (kind) {
   case style_kind::panel:
     return appearance.panel;
+  case style_kind::divider:
+    return appearance.divider;
   case style_kind::button:
     return appearance.button;
   case style_kind::checkbox:

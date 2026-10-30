@@ -33,6 +33,8 @@ using cyberverse::ui::rect;
 using cyberverse::ui::system;
 using cyberverse::ui::test::make_headless;
 using cyberverse::ui::widgets::align_items;
+using cyberverse::ui::widgets::divider;
+using cyberverse::ui::widgets::divider_orientation;
 using cyberverse::ui::widgets::flex_direction;
 using cyberverse::ui::widgets::flexbox;
 using cyberverse::ui::widgets::insets;
@@ -261,6 +263,60 @@ TEST_CASE("native content receives a measured rectangle", "[ui][widgets][native]
   REQUIRE(called);
   REQUIRE(native_bounds.width == Catch::Approx(80.0f));
   REQUIRE(native_bounds.height == Catch::Approx(40.0f));
+}
+
+TEST_CASE("horizontal divider fills width minus margins", "[ui][widgets][divider]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.divider.horizontal");
+  widget_panel* panel_ptr = panel.get();
+
+  rect root_rect{};
+  rect divider_rect{};
+
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(300.0f, 120.0f).padding(insets{ 10.0f, 10.0f, 10.0f, 10.0f });
+    auto& line = root.add(divider{}.thickness(2.0f).margin(insets{ 12.0f, 0.0f, 18.0f, 0.0f }));
+    cyberverse::ui::widgets::render(root);
+    root_rect = widget_rect(root);
+    divider_rect = widget_rect(line);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+
+  REQUIRE(divider_rect.width == Catch::Approx(250.0f)); // 300 - 20 padding - 30 margin
+  REQUIRE(divider_rect.height == Catch::Approx(2.0f));
+  REQUIRE(divider_rect.x == Catch::Approx(root_rect.x + 10.0f + 12.0f));
+  REQUIRE(divider_rect.y == Catch::Approx(root_rect.y + 10.0f));
+}
+
+TEST_CASE("vertical divider stretches height minus margins", "[ui][widgets][divider]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
+  auto panel = std::make_unique<widget_panel>("widgets.divider.vertical");
+  widget_panel* panel_ptr = panel.get();
+
+  rect root_rect{};
+  rect divider_rect{};
+
+  panel_ptr->on_draw_ = [&](panel_context&) {
+    flexbox root;
+    root.size(300.0f, 120.0f).direction(flex_direction::row).padding(insets{ 10.0f, 10.0f, 10.0f, 10.0f });
+    auto& line = root.add(divider{ divider_orientation::vertical }.margin(insets{ 0.0f, 6.0f, 0.0f, 4.0f }));
+    cyberverse::ui::widgets::render(root);
+    root_rect = widget_rect(root);
+    divider_rect = widget_rect(line);
+  };
+  layer.add_panel(std::move(panel));
+
+  run_frame(*context.ui, *panel_ptr);
+
+  REQUIRE(divider_rect.width == Catch::Approx(1.0f));
+  REQUIRE(divider_rect.height == Catch::Approx(90.0f)); // 120 - 20 padding - 10 margin
+  REQUIRE(divider_rect.x == Catch::Approx(root_rect.x + 10.0f));
+  REQUIRE(divider_rect.y == Catch::Approx(root_rect.y + 10.0f + 6.0f));
 }
 
 TEST_CASE("theme overrides are accepted without changing layout", "[ui][widgets][theme]") {

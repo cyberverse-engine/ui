@@ -13,6 +13,7 @@
 #include "cyberverse/ui/widgets/button.hpp"
 #include "cyberverse/ui/widgets/checkbox.hpp"
 #include "cyberverse/ui/widgets/collapse_group.hpp"
+#include "cyberverse/ui/widgets/divider.hpp"
 #include "cyberverse/ui/widgets/flexbox.hpp"
 #include "cyberverse/ui/widgets/native.hpp"
 #include "cyberverse/ui/widgets/panel.hpp"
