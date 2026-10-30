@@ -36,7 +36,7 @@ class render_device;
 
 namespace ui {
 
-class layer;
+class window;
 
 /**
  * @brief Creation description for ui::system
@@ -63,8 +63,8 @@ struct system_config {
  * @brief The application-facing UI facade
  *
  * system owns the single Dear ImGui context, the Diligent ImGui renderer, the
- * input bridge, fonts, theme, and the ordered layer stack. One engine frame
- * opens at most one Dear ImGui frame, and every layer shares it.
+ * input bridge, fonts, theme, and the ordered window stack. One engine frame
+ * opens at most one Dear ImGui frame, and every window shares it.
  *
  * Lifecycle:
  * - create() creates the ImGui context first, then fonts and the renderer. Any
@@ -74,7 +74,7 @@ struct system_config {
  * - begin_frame() returns false when no drawable frame exists; draw() and
  *   end_frame() must not be called then. end_frame() without an active frame is
  *   a no-op.
- * - Layer and window structure may only change between frames; changing it during
+ * - Window structure may only change between frames; changing it during
  *   a frame is a std::logic_error.
  * - All methods must be called from the render thread. system is not
  *   thread-safe.
@@ -100,38 +100,38 @@ public:
   system& operator=(system&&) = delete;
 
   /**
-   * @brief Add an owned UI layer
+   * @brief Add an owned UI window
    *
-   * Layer names must be unique, non-empty, and contain neither "###" nor "/".
+   * Window ids must be unique, non-empty, and contain neither "###" nor "/".
    *
-   * @throws std::invalid_argument On an invalid or duplicate name
+   * @throws std::invalid_argument On an invalid or duplicate id
    * @throws std::logic_error During an active frame
    */
-  layer& add_layer(std::unique_ptr<layer> layer);
+  window& add_window(std::unique_ptr<window> content);
 
   /**
-   * @brief Remove a layer owned by the system
+   * @brief Remove a window owned by the system
    *
-   * @return true when the layer was owned and removed
+   * @return true when the window was owned and removed
    */
-  bool remove_layer(layer& layer) noexcept;
+  bool remove_window(window& content) noexcept;
 
   /**
-   * @brief Remove every layer
+   * @brief Remove every window
    *
    * @throws std::logic_error During an active frame
    */
-  void clear_layers();
+  void clear_windows();
 
   /**
-   * @brief Find a layer by name
+   * @brief Find a window by id
    *
-   * @return layer* or null
+   * @return window* or null
    */
-  [[nodiscard]] layer* find_layer(std::string_view name) noexcept;
+  [[nodiscard]] window* find_window(std::string_view id) noexcept;
 
   /**
-   * @brief Whether any visible layer has a visible window
+   * @brief Whether any window reports visible()
    *
    */
   [[nodiscard]] bool has_visible_content() const noexcept;
@@ -163,7 +163,7 @@ public:
   bool begin_frame(float display_width, float display_height, double delta_time);
 
   /**
-   * @brief Draw every visible layer inside the active Dear ImGui frame
+   * @brief Draw every visible window inside the active Dear ImGui frame
    *
    * No-op when no frame is active.
    *

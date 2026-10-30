@@ -2,11 +2,11 @@
 
 Layered UI runtime for Cyberverse Engine applications. `cyberverse::ui` owns the
 single Dear ImGui context, the Diligent ImGui renderer, the input bridge, fonts,
-theme, and an ordered stack of UI layers.
+theme, and an ordered stack of UI windows.
 
 This is v0.5. The library hard-depends on Dear ImGui and DiligentEngine. There is
 no UI backend interface and no renderer abstraction. Every `ui::window` is a
-managed ImGui window; by default it fills the layer viewport, and a window may
+managed ImGui window; by default it fills the system viewport, and a window may
 request a local rectangle for sidebars or other non-fullscreen content. Window
 content may use native Dear ImGui directly or the `ui::widgets` component layer.
 
@@ -29,13 +29,12 @@ Yoga and the legacy immediate-mode widget tree are no longer dependencies.
 ## Contents
 
 - `ui::system`: owns the ImGui context, Diligent renderer, fonts, theme, input
-  bridge, and layer stack. One engine frame opens at most one ImGui frame.
-- `ui::layer`: one UI layer with a name, order, visibility, and an ordered
-  window list.
-- `ui::window` / `ui::window_context`: one managed top-level window and the
-  frame information passed to `draw()`.
+  bridge, and ordered window list. One engine frame opens at most one ImGui
+  frame.
+- `ui::window` / `ui::window_context`: one managed top-level window, its draw
+  order/visibility, and the frame information passed to `draw()`.
 - `ui::frame_stage`: the only `runtime::frame_stage` adapter. It draws every
-  layer in one overlay pass and should be registered after all 3D stages.
+  window in one overlay pass and should be registered after all 3D stages.
 - `ui::widgets`: the functional component layer. Components are created by
   factories over caller-owned `widgets::state`; containers store references to
   named children. There is no virtual widget base and no `std::vector` inside
@@ -45,8 +44,8 @@ Yoga and the legacy immediate-mode widget tree are no longer dependencies.
 
 ## Windows
 
-A window is a content unit managed by a layer. The layer owns the Dear ImGui
-window; the application only paints content:
+A window is a content unit managed by the system. The system owns the Dear
+ImGui window; the application only paints content:
 
 ```cpp
 #include "cyberverse/ui.hpp"
@@ -66,11 +65,12 @@ public:
 };
 ```
 
-The managed window fills the layer viewport by default. A window may override
+The managed window fills the system viewport by default. A window may override
 `window_rect(viewport)` to request a local rectangle; the system clamps it and
 reports it through `window_context::bounds`. Feature flags include title bar,
 scrollbar, transparent background, no input, focus on appearing, and
-bring-to-front on focus.
+bring-to-front on focus. `window::order()` controls draw order; equal orders
+keep insertion order.
 
 ## Widgets
 
@@ -158,23 +158,23 @@ field-level merge. Without an override, `run()`'s theme is used.
 3. `system::begin_frame(frame, dt)` binds the frame's color/depth targets,
    resets the scissor, calls the Diligent renderer's `NewFrame`, feeds platform
    input into ImGui, and calls `ImGui::NewFrame()`.
-4. `system::draw()` visits visible layers from the lowest order to the highest,
-   creates one managed ImGui window per visible window (full viewport by
-   default, or `window::window_rect()` when supplied), and calls
+4. `system::draw()` visits visible windows from the lowest `order()` to the
+   highest, creates one managed ImGui window per visible window (full viewport
+   by default, or `window::window_rect()` when supplied), and calls
    `window::draw(context)`.
 5. `system::end_frame()` calls `ImGui::Render()`, submits one
    `RenderDrawData()` pass, resets the scissor, and records
    `WantCaptureMouse` / `WantCaptureKeyboard`.
 
 `begin_frame()` returning false means no drawable frame; do not call `draw()` or
-`end_frame()`. `end_frame()` without an active frame is a no-op. Layer and
-window structure may only change between frames; mutating it during a frame
-throws `std::logic_error`. A window exception ends its window and discards the
-ImGui frame before propagating.
+`end_frame()`. `end_frame()` without an active frame is a no-op. Window structure may only
+change between frames; mutating it during a frame throws `std::logic_error`. A
+window exception ends its window and discards the ImGui frame before
+propagating.
 
 `wants_mouse()` / `wants_keyboard()` reflect the most recently completed frame,
-so applications see one frame of latency. Hide layers or use `no_input` windows
-when input must be blocked immediately.
+so applications see one frame of latency. Hide windows or use `no_input`
+windows when input must be blocked immediately.
 
 ## Ownership and threading
 
@@ -189,21 +189,20 @@ when input must be blocked immediately.
 - Widget `state` objects are non-copyable/non-movable and must outlive the
   component tree that references them.
 
-## Layer z-order
+## Window z-order
 
-Layers are drawn from the lowest `order` to the highest, and ties keep insertion
-order. The implementation raises each layer's managed windows above lower
-windows through `imgui_internal.h`, isolated in
-`src/cyberverse/ui/detail/z_order.cpp`. If a Dear ImGui upgrade removes that
-internal API, overlapping layers no longer get a strict z-order guarantee;
-applications should then avoid overlapping interactive layers and control input
-through visibility and `no_input`.
+Windows are drawn from the lowest `order()` to the highest, and ties keep
+insertion order. The implementation raises windows in draw order through
+`imgui_internal.h`, isolated in `src/cyberverse/ui/detail/z_order.cpp`. If a
+Dear ImGui upgrade removes that internal API, overlapping windows no longer get
+a strict z-order guarantee; applications should then avoid overlapping
+interactive windows and control input through visibility and `no_input`.
 
 ## Headless mode
 
 `system_config::headless = true` creates no GPU resources. It builds the font
 atlas eagerly with a test-only texture identifier and still produces Dear ImGui
-draw data, so layer ordering, windows, input mapping, and exception cleanup can
+draw data, so window ordering, input mapping, and exception cleanup can
 be tested without a GPU or window. A headless system may own a platform headless
 window to inject deterministic input.
 

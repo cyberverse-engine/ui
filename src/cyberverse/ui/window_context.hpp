@@ -17,21 +17,19 @@
 namespace cyberverse {
 namespace ui {
 
-class layer;
 class system;
 
 /**
  * @brief Frame information handed to window::draw()
  *
  * The context is valid only for the duration of the draw() call and must not be
- * stored. bounds is the logical viewport of the layer; the managed window
+ * stored. bounds is the logical viewport of the system; the managed window
  * covers exactly that rectangle.
  *
  */
 struct window_context {
   const system& ui;              ///< Owning UI runtime
-  const layer& stage;            ///< Layer that owns the window
-  rect bounds{};                 ///< Logical layer viewport rectangle
+  rect bounds{};                 ///< Logical viewport rectangle
   double delta_time = 0.0;       ///< Frame delta in seconds
   std::uint64_t frame_index = 0; ///< Monotonic UI frame index
   float scale = 1.0f;            ///< Logical-to-physical pixel scale

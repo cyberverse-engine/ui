@@ -20,7 +20,6 @@
 
 #include "cyberverse/platform/backends/headless/window.hpp"
 #include "cyberverse/platform/raw_input.hpp"
-#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/widgets.hpp"
 #include "cyberverse/ui/widgets/detail/state_access.hpp"
@@ -30,8 +29,6 @@
 
 namespace {
 
-using cyberverse::ui::layer;
-using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::window_context;
 using cyberverse::ui::test::make_headless;
@@ -181,7 +178,6 @@ TEST_CASE("widgets component applies visibility and opacity centrally", "[ui][wi
 
 TEST_CASE("widgets box clips and pads its child", "[ui][widgets][box]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state box_s{ "box" };
   state child_s{ "box.child" };
@@ -197,7 +193,7 @@ TEST_CASE("widgets box clips and pads its child", "[ui][widgets][box]") {
     auto root = widgets::box(box_s, widgets::box_options{ .padding = insets{ 5.0f, 6.0f, 7.0f, 8.0f } }, child);
     widgets::run(root, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
   run_frame(*context.ui);
 
   REQUIRE(box_s.bounds().width == Catch::Approx(100.0f));
@@ -225,13 +221,12 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
   REQUIRE(measures == 0);
 
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
   animator animations;
   auto window = std::make_unique<host_window>("widgets.zero", [&](window_context&) {
     auto root_draw = widgets::stack(container_s, stack_options{}, child);
     widgets::run(root_draw, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
   run_frame(*context.ui);
   REQUIRE(draws == 0);
   REQUIRE(measures == 0);
@@ -255,7 +250,6 @@ TEST_CASE("widgets zero-size containers skip child computation", "[ui][widgets][
 
 TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "flex.row" };
   row_s.set(property_type::width, 300.0f);
@@ -280,7 +274,7 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
         b);
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
   run_frame(*context.ui);
 
   REQUIRE(a_s.bounds().width == Catch::Approx(230.0f));
@@ -305,7 +299,7 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
     auto row = widgets::flexbox(shrink_s, flex_options{}, c, d);
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window2));
+  context.ui->add_window(std::move(window2));
   run_frame(*context.ui);
   REQUIRE(c_s.bounds().width == Catch::Approx(50.0f));
   REQUIRE(d_s.bounds().width == Catch::Approx(50.0f));
@@ -325,7 +319,7 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
         column_s, flex_options{ .direction = flex_direction::column, .align = align_items::stretch }, e, f);
     widgets::run(column, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window3));
+  context.ui->add_window(std::move(window3));
   run_frame(*context.ui);
   REQUIRE(e_s.bounds().width == Catch::Approx(100.0f));
   REQUIRE(f_s.bounds().width == Catch::Approx(100.0f));
@@ -335,7 +329,6 @@ TEST_CASE("widgets flexbox grows and shrinks children", "[ui][widgets][flexbox]"
 
 TEST_CASE("widgets run ticks the root before measuring", "[ui][widgets][run]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state root_s{ "root" };
   root_s.set(property_type::height, 100.0f);
@@ -348,7 +341,7 @@ TEST_CASE("widgets run ticks the root before measuring", "[ui][widgets][run]") {
     auto root = widgets::stack(root_s, stack_options{});
     widgets::run(root, frame_context{ 0.5f, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(root_s.bounds().height == Catch::Approx(50.0f));
@@ -358,7 +351,6 @@ TEST_CASE("widgets run ticks the root before measuring", "[ui][widgets][run]") {
 
 TEST_CASE("widgets empty stack uses padding", "[ui][widgets][stack]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state root_s{ "root" };
   theme appearance;
@@ -368,7 +360,7 @@ TEST_CASE("widgets empty stack uses padding", "[ui][widgets][stack]") {
     auto root = widgets::stack(root_s, stack_options{ .padding = insets{ 3.0f, 4.0f, 5.0f, 6.0f } });
     widgets::run(root, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(root_s.bounds().width == Catch::Approx(8.0f));
@@ -377,7 +369,6 @@ TEST_CASE("widgets empty stack uses padding", "[ui][widgets][stack]") {
 
 TEST_CASE("widgets text, button, and stack run with an explicit style override", "[ui][widgets][layout]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "row" };
   state title_s{ "title" };
@@ -416,7 +407,7 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
     title_bounds = title_s.bounds();
     ok_bounds = ok_s.bounds();
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
 
@@ -430,7 +421,6 @@ TEST_CASE("widgets text, button, and stack run with an explicit style override",
 
 TEST_CASE("widgets button click emits the state event", "[ui][widgets][button]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "row" };
   state ok_s{ "ok" };
@@ -450,7 +440,7 @@ TEST_CASE("widgets button click emits the state event", "[ui][widgets][button]")
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
     ok_bounds = ok_s.bounds();
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(clicks == 0);
@@ -460,7 +450,6 @@ TEST_CASE("widgets button click emits the state event", "[ui][widgets][button]")
 
 TEST_CASE("widgets checkbox and radio update external values", "[ui][widgets][choice]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state column_s{ "choice.column" };
   state check_s{ "choice.check" };
@@ -495,7 +484,7 @@ TEST_CASE("widgets checkbox and radio update external values", "[ui][widgets][ch
     check_bounds = check_s.bounds();
     second_bounds = second_s.bounds();
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(check_bounds.width > 0.0f);
@@ -511,7 +500,6 @@ TEST_CASE("widgets checkbox and radio update external values", "[ui][widgets][ch
 TEST_CASE("widgets text input edits external text", "[ui][widgets][input]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
   context.ui->io().ConfigInputTrickleEventQueue = false;
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state column_s{ "input.column" };
   state input_s{ "input.field" };
@@ -532,7 +520,7 @@ TEST_CASE("widgets text input edits external text", "[ui][widgets][input]") {
     widgets::run(column, frame_context{ frame_delta, appearance, animations });
     input_bounds = input_s.bounds();
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   click(context.headless_window(), *context.ui, input_bounds);
@@ -576,7 +564,6 @@ TEST_CASE("widgets divider measures along the available axis", "[ui][widgets][di
 TEST_CASE("widgets scroll_view scrolls both axes and clamps offsets", "[ui][widgets][scroll]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
   context.ui->io().ConfigInputTrickleEventQueue = false;
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state view_s{ "scroll.view" };
   view_s.set(property_type::width, 100.0f);
@@ -592,7 +579,7 @@ TEST_CASE("widgets scroll_view scrolls both axes and clamps offsets", "[ui][widg
     auto view = widgets::scroll_view(view_s, scroll_options{}, content);
     widgets::run(view, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   view_s.set(property_type::scroll_x, 999.0f);
   view_s.set(property_type::scroll_y, 999.0f);
@@ -613,7 +600,6 @@ TEST_CASE("widgets scroll_view scrolls both axes and clamps offsets", "[ui][widg
 
 TEST_CASE("widgets scroll_view supports horizontal content", "[ui][widgets][scroll]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state view_s{ "scroll.horizontal" };
   view_s.set(property_type::width, 100.0f);
@@ -634,7 +620,7 @@ TEST_CASE("widgets scroll_view supports horizontal content", "[ui][widgets][scro
         view_s, scroll_options{ .direction = scroll_content_direction::horizontal }, first, second);
     widgets::run(view, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   view_s.set(property_type::scroll_x, 999.0f);
   run_frame(*context.ui);
@@ -646,7 +632,6 @@ TEST_CASE("widgets scroll_view supports horizontal content", "[ui][widgets][scro
 
 TEST_CASE("widgets scroll_view scrollbar changes the offset", "[ui][widgets][scroll]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state view_s{ "scroll.bar" };
   view_s.set(property_type::width, 100.0f);
@@ -662,7 +647,7 @@ TEST_CASE("widgets scroll_view scrollbar changes the offset", "[ui][widgets][scr
     auto view = widgets::scroll_view(view_s, scroll_options{}, content);
     widgets::run(view, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
   run_frame(*context.ui);
 
   const rect view_bounds = view_s.bounds();
@@ -688,7 +673,6 @@ TEST_CASE("widgets zero-height scroll_view skips content", "[ui][widgets][scroll
 
 TEST_CASE("widgets flexbox justifies remaining main-axis space", "[ui][widgets][flexbox]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "flex.justify" };
   row_s.set(property_type::width, 200.0f);
@@ -708,7 +692,7 @@ TEST_CASE("widgets flexbox justifies remaining main-axis space", "[ui][widgets][
     auto row = widgets::flexbox(row_s, flex_options{ .justify = justify_content::end }, a, b);
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
   run_frame(*context.ui);
 
   REQUIRE(a_s.bounds().x == Catch::Approx(100.0f));
@@ -717,7 +701,6 @@ TEST_CASE("widgets flexbox justifies remaining main-axis space", "[ui][widgets][
 
 TEST_CASE("widgets flexbox consumes animated width inputs", "[ui][widgets][flexbox]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "flex.animated" };
   row_s.set(property_type::width, 200.0f);
@@ -738,7 +721,7 @@ TEST_CASE("widgets flexbox consumes animated width inputs", "[ui][widgets][flexb
     auto row = widgets::flexbox(row_s, flex_options{}, a, b);
     widgets::run(row, frame_context{ 0.5f, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(a_s.value(property_type::width) == Catch::Approx(100.0f));
@@ -748,7 +731,6 @@ TEST_CASE("widgets flexbox consumes animated width inputs", "[ui][widgets][flexb
 
 TEST_CASE("widgets stack distinguishes invisible and collapsed children", "[ui][widgets][visibility]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "row" };
   state first_s{ "first" };
@@ -766,7 +748,7 @@ TEST_CASE("widgets stack distinguishes invisible and collapsed children", "[ui][
         second);
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   const float visible_width = row_s.bounds().width;
@@ -786,7 +768,6 @@ TEST_CASE("widgets stack distinguishes invisible and collapsed children", "[ui][
 
 TEST_CASE("widgets font_size changes text layout", "[ui][widgets][font]") {
   auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "widgets" }));
 
   state row_s{ "row" };
   state default_s{ "default" };
@@ -801,7 +782,7 @@ TEST_CASE("widgets font_size changes text layout", "[ui][widgets][font]") {
     auto row = widgets::stack(row_s, stack_options{}, normal, large);
     widgets::run(row, frame_context{ frame_delta, appearance, animations });
   });
-  layer.add_window(std::move(window));
+  context.ui->add_window(std::move(window));
 
   run_frame(*context.ui);
   REQUIRE(large_s.bounds().height > default_s.bounds().height);

@@ -46,7 +46,7 @@ enum class window_feature : std::uint32_t {
   transparent = 1u << 2,             ///< Do not draw the window background
   no_input = 1u << 3,                ///< Display only, never receive input
   focus_on_appearing = 1u << 4,      ///< Allow the window to take focus when shown
-  bring_to_front_on_focus = 1u << 5, ///< Allow focus to reorder the window inside its layer
+  bring_to_front_on_focus = 1u << 5, ///< Allow focus to reorder the window in the system
 };
 
 /**
@@ -76,15 +76,16 @@ enum class window_feature : std::uint32_t {
 struct window_context;
 
 /**
- * @brief One content window managed by a ui::layer
+ * @brief One content window managed by a ui::system
  *
- * The layer owns the Dear ImGui window and always sizes it to the layer's
+ * The system owns the Dear ImGui window and always sizes it to the system's
  * logical viewport. draw() only paints content; it must not open a top-level
  * window or set window position/size. Use Dear ImGui's native cursor, Dummy,
  * Spacing, child-window, and draw-list APIs to position content and whitespace.
  *
- * A window must return stable, layer-unique identifiers. id(), title(), and
- * visible() are called during a frame and must be cheap and side-effect free.
+ * A window must return a stable, system-unique identifier. id(), title(),
+ * visible(), and order() are called during a frame and must be cheap and
+ * side-effect free.
  *
  */
 class window {
@@ -92,10 +93,10 @@ public:
   virtual ~window() = default;
 
   /**
-   * @brief Stable, layer-unique window identifier
+   * @brief Stable, system-unique window identifier
    *
    * Must not be empty and must not contain "###" or "/". The application is
-   * responsible for layer-wide uniqueness; it is validated when the window is
+   * responsible for system-wide uniqueness; it is validated when the window is
    * added.
    *
    * @return std::string_view
@@ -106,7 +107,7 @@ public:
    * @brief Optional window title; empty means no title
    *
    * The title may change, but it must not contain "###". The Dear ImGui window
-   * ID stays stable through the "###<layer>/<id>" suffix.
+   * ID stays stable through the "###<id>" suffix.
    *
    * @return std::string_view
    */
@@ -115,8 +116,7 @@ public:
   /**
    * @brief Whether the window participates in this frame
    *
-   * A hidden window is not drawn; other windows are unaffected because the
-   * managed window fills the whole layer viewport.
+   * A hidden window is not drawn; other windows are unaffected.
    *
    * @return true
    * @return false
@@ -131,7 +131,7 @@ public:
   [[nodiscard]] virtual window_feature features() const noexcept { return window_feature::none; }
 
   /**
-   * @brief Optional managed-window rectangle inside the layer viewport
+   * @brief Optional managed-window rectangle inside the system viewport
    *
    * The default is nullopt, which preserves the full-viewport managed window.
    * Return a finite positive rectangle to create a local window (for example a
@@ -139,10 +139,18 @@ public:
    * fall back to the full viewport. This method is called during a frame and
    * must be cheap and side-effect free.
    *
-   * @param viewport Layer viewport in logical points
+   * @param viewport System viewport in logical points
    * @return std::optional<rect>
    */
   [[nodiscard]] virtual std::optional<rect> window_rect(const rect& viewport) const noexcept { return std::nullopt; }
+
+  /**
+   * @brief Draw order; higher values draw above lower values
+   *
+   * Equal orders keep insertion order. The default is 0.
+   *
+   */
+  [[nodiscard]] virtual int order() const noexcept { return 0; }
 
   /**
    * @brief Draw the window's content inside the managed window
@@ -150,7 +158,7 @@ public:
    * Called between ImGui::Begin()/End() for a window that already covers the
    * whole logical viewport. The context is only valid during the call.
    *
-   * @param context Frame and layer information
+   * @param context Frame information
    */
   virtual void draw(window_context& context) = 0;
 };

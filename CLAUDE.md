@@ -27,29 +27,29 @@ not a backend-agnostic framework.
 - `ui::widgets` must not depend on `ui::window`, runtime, platform, or
   render-core. It may depend only on `Diligent-Imgui` and
   `cyberverse::animation::static_lib`.
-- Top-level hosting is `ui::window` managed by `ui::layer` and `ui::system`.
-  A window is not a widget. It owns Dear ImGui window lifecycle, local
+- Top-level hosting is `ui::window`, owned directly by `ui::system`. A window is
+  not a widget. It owns Dear ImGui window lifecycle, order, visibility, local
   rectangles, features, input capture, z-order, and exception cleanup.
-- Do not add HUD/menu/diagnostics types or layer-level modal/capture policies;
+- Do not add HUD/menu/diagnostics types or window-level modal/capture policies;
   HUD and menu are application concepts.
 - Do not add font files, assets, or application types to the library.
 
 ## API rules
 
 - `ui::system` owns the single Dear ImGui context, the Diligent ImGui renderer,
-  the input bridge, fonts, theme, and the layer stack. A non-headless frame
-  binds the frame's color/depth targets and resets the scissor before the
+  the input bridge, fonts, theme, and the ordered window list. A non-headless
+  frame binds the frame's color/depth targets and resets the scissor before the
   overlay pass.
 - One engine frame opens at most one ImGui frame. `system::begin_frame()` /
   `draw()` / `end_frame()` are paired; a failed begin means no draw/end.
-- `ui::layer` is a UI layer: name, order, visibility, and an ordered window
-  list. It is not a `runtime::frame_stage`; `ui::frame_stage` is the only
-  runtime adapter.
-- Every `ui::window` is a managed Dear ImGui window that fills the layer's
-  logical viewport by default. `window::window_rect()` may request a local
-  rectangle; the system clamps it. Windows must draw content only; they may use
-  native Dear ImGui APIs or `ui::widgets::run(root, frame_context)`.
-- Layer/window structure changes are only allowed between frames; throw
+- There is no separate UI layer object. `ui::system` owns windows directly.
+  Window `order()` controls draw order; equal orders keep insertion order.
+  Window `visible()` replaces layer visibility.
+- Every `ui::window` is a managed Dear ImGui window that fills the system
+  viewport by default. `window::window_rect()` may request a local rectangle;
+  the system clamps it. Windows must draw content only; they may use native
+  Dear ImGui APIs or `ui::widgets::run(root, frame_context)`.
+- Window structure changes are only allowed between frames; throw
   `std::logic_error` during an active frame.
 - If a window throws, its ImGui window must still end, the ImGui frame must be
   discarded, and the exception must propagate. The next frame must be usable.
@@ -57,6 +57,8 @@ not a backend-agnostic framework.
   `imgui.h`. Public widget/configuration headers stay ImGui-free. Only
   `widgets/run.hpp`, implementation `.cpp` files, and the internal
   `widgets/detail/font.hpp` / `scroll_canvas.cpp` bridge may include ImGui.
+- Window ids are system-wide unique and must not contain `###` or `/`.
+  Dear ImGui window names use `title###id`.
 - Widgets:
   - `state` owns id, bounds, visibility, properties, animation metadata, and the
     event callback; it never owns the animator or child widgets.
@@ -72,11 +74,11 @@ not a backend-agnostic framework.
   asynchronous UI frames.
 - One process, one ImGui context, one `ui::frame_stage`.
 
-## Layer z-order
+## Window z-order
 
 `detail/z_order.cpp` is the only file that includes `imgui_internal.h`. If an
 upgrade removes `BringWindowToDisplayFront`/`FindWindowByName`, drop the
-promotion and document the degraded overlapping-layer guarantee instead of
+promotion and document the degraded overlapping-window guarantee instead of
 spreading internal API use.
 
 ## Build and test

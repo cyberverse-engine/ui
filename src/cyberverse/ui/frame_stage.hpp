@@ -39,7 +39,7 @@ using frame_provider =
  * @brief The only runtime adapter owned by the UI runtime
  *
  * The stage is variable-step and leaves on_update empty. on_render opens one
- * Dear ImGui frame shared by all layers and submits the overlay pass. Register
+ * Dear ImGui frame shared by all windows and submits the overlay pass. Register
  * one instance after every 3D render stage with receive_update = false,
  * receive_render = true, and a high render_order.
  *

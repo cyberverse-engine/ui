@@ -1,7 +1,7 @@
 /**
  * @file z_order.hpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Layer z-order protection for Dear ImGui windows
+ * @brief Window z-order protection for Dear ImGui windows
  * @version 0.3
  * @date 2026-10-27
  *

@@ -1,7 +1,7 @@
 /**
  * @file architecture_test.cpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Public header and type checks for the layered UI runtime
+ * @brief Public header and type checks for the functional UI runtime
  * @version 0.4
  * @date 2026-10-30
  *
@@ -24,7 +24,7 @@ using cyberverse::ui::window_feature;
 
 } // namespace
 
-TEST_CASE("ui public headers expose the layered model", "[ui][architecture]") {
+TEST_CASE("ui public headers expose the window model", "[ui][architecture]") {
   STATIC_REQUIRE(static_cast<std::uint32_t>(window_feature::none) == 0);
   STATIC_REQUIRE(has_feature(window_feature::no_input | window_feature::transparent, window_feature::no_input));
   STATIC_REQUIRE_FALSE(has_feature(window_feature::transparent, window_feature::no_input));

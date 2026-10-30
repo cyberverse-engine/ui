@@ -14,13 +14,10 @@
 #include <memory>
 #include <stdexcept>
 
-#include "cyberverse/ui/layer.hpp"
 #include "support/test_ui.hpp"
 
 namespace {
 
-using cyberverse::ui::layer;
-using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::system_config;
 using cyberverse::ui::window_context;
@@ -63,13 +60,11 @@ TEST_CASE("a non-headless system requires a device and window", "[ui][system]") 
 
 TEST_CASE("headless frame produces draw data exactly once", "[ui][system]") {
   auto context = make_headless();
-  auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.hud" });
   auto content = std::make_unique<fake_window>();
   content->on_draw = [](window_context&) {
     ImGui::TextUnformatted("cyberverse");
   };
-  layer->add_window(std::move(content));
-  context.ui->add_layer(std::move(layer));
+  context.ui->add_window(std::move(content));
 
   const int frame_count_before = ImGui::GetFrameCount();
   REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
@@ -94,16 +89,14 @@ TEST_CASE("destroying a system with an active frame is safe", "[ui][system]") {
 
 TEST_CASE("structural mutations during a frame are rejected", "[ui][system]") {
   auto context = make_headless();
-  auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.hud" });
-  cyberverse::ui::layer* layer_ptr = &context.ui->add_layer(std::move(layer));
+  auto content = std::make_unique<fake_window>();
+  fake_window* content_ptr = content.get();
+  context.ui->add_window(std::move(content));
 
   REQUIRE(context.ui->begin_frame(320.0f, 200.0f, 1.0 / 60.0));
-  REQUIRE_THROWS_AS(context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app.menu" })),
-                    std::logic_error);
-  REQUIRE_THROWS_AS(layer_ptr->set_visible(false), std::logic_error);
-  REQUIRE_THROWS_AS(layer_ptr->set_order(10), std::logic_error);
-  REQUIRE_FALSE(context.ui->remove_layer(*layer_ptr));
-  REQUIRE_THROWS_AS(context.ui->clear_layers(), std::logic_error);
+  REQUIRE_THROWS_AS(context.ui->add_window(std::make_unique<fake_window>()), std::logic_error);
+  REQUIRE_FALSE(context.ui->remove_window(*content_ptr));
+  REQUIRE_THROWS_AS(context.ui->clear_windows(), std::logic_error);
   context.ui->end_frame();
 }
 
@@ -113,6 +106,6 @@ TEST_CASE("capture flags default to false and font ids are reported", "[ui][syst
   REQUIRE_FALSE(context.ui->wants_keyboard());
   REQUIRE(context.ui->font_loaded("default"));
   REQUIRE_FALSE(context.ui->font_loaded("cjk"));
-  REQUIRE(context.ui->find_layer("missing") == nullptr);
+  REQUIRE(context.ui->find_window("missing") == nullptr);
   REQUIRE_FALSE(context.ui->has_visible_content());
 }

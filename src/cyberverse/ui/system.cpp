@@ -24,9 +24,7 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/ui/detail/frame_phase.hpp"
-#include "cyberverse/ui/detail/layer_access.hpp"
 #include "cyberverse/ui/detail/z_order.hpp"
-#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/window_context.hpp"
 
 namespace cyberverse {
@@ -157,9 +155,9 @@ system::impl::impl(const system_config& config)
 }
 
 system::impl::~impl() {
-  layers_.clear();
+  windows_.clear();
   draw_order_.clear();
-  layer_signature_.clear();
+  window_signature_.clear();
   destroy_context();
 }
 
@@ -343,56 +341,63 @@ void system::impl::load_fonts() {
   }
 }
 
-layer& system::impl::add_layer(std::unique_ptr<layer> layer) {
-  detail::require_between_frames("add a UI layer");
-  if (layer == nullptr) {
-    throw std::invalid_argument("cyberverse::ui::system: layer must not be null");
+window& system::impl::add_window(std::unique_ptr<window> content) {
+  detail::require_between_frames("add a UI window");
+  if (content == nullptr) {
+    throw std::invalid_argument("cyberverse::ui::system: window must not be null");
   }
-  if (find_layer(layer->name()) != nullptr) {
-    throw std::invalid_argument(std::string{ "cyberverse::ui::system: duplicate layer name '" } +
-                                std::string{ layer->name() } + "'");
+  const std::string_view id = content->id();
+  if (id.empty()) {
+    throw std::invalid_argument("cyberverse::ui::system: a window id must not be empty");
   }
-  layers_.push_back(std::move(layer));
-  return *layers_.back();
+  if (id.find("###") != std::string_view::npos) {
+    throw std::invalid_argument("cyberverse::ui::system: a window id must not contain \"###\"");
+  }
+  if (id.find('/') != std::string_view::npos) {
+    throw std::invalid_argument("cyberverse::ui::system: a window id must not contain '/'");
+  }
+  if (find_window(id) != nullptr) {
+    throw std::invalid_argument(std::string{ "cyberverse::ui::system: duplicate window id '" } + std::string{ id } +
+                                "'");
+  }
+  windows_.push_back(std::move(content));
+  return *windows_.back();
 }
 
-bool system::impl::remove_layer(layer& layer) noexcept {
+bool system::impl::remove_window(window& content) noexcept {
   if (detail::frame_in_progress()) {
     return false;
   }
-  const auto iterator = std::find_if(layers_.begin(), layers_.end(), [&layer](const auto& candidate) {
-    return candidate.get() == &layer;
+  const auto iterator = std::find_if(windows_.begin(), windows_.end(), [&content](const auto& candidate) {
+    return candidate.get() == &content;
   });
-  if (iterator == layers_.end()) {
+  if (iterator == windows_.end()) {
     return false;
   }
-  layers_.erase(iterator);
+  windows_.erase(iterator);
   return true;
 }
 
-void system::impl::clear_layers() {
-  detail::require_between_frames("clear UI layers");
-  layers_.clear();
+void system::impl::clear_windows() {
+  detail::require_between_frames("clear UI windows");
+  windows_.clear();
   draw_order_.clear();
-  layer_signature_.clear();
+  window_signature_.clear();
 }
 
-layer* system::impl::find_layer(std::string_view name) noexcept {
-  for (const auto& layer : layers_) {
-    if (layer != nullptr && layer->name() == name) {
-      return layer.get();
+window* system::impl::find_window(std::string_view id) noexcept {
+  for (const auto& content : windows_) {
+    if (content != nullptr && content->id() == id) {
+      return content.get();
     }
   }
   return nullptr;
 }
 
 bool system::impl::has_visible_content() const noexcept {
-  for (const auto& layer : layers_) {
-    if (layer != nullptr && layer->visible() && layer->has_visible_windows()) {
-      return true;
-    }
-  }
-  return false;
+  return std::any_of(windows_.begin(), windows_.end(), [](const auto& content) {
+    return content != nullptr && content->visible();
+  });
 }
 
 bool system::impl::begin_frame(const render_core::frame_context& frame, double delta_time) {
@@ -505,11 +510,11 @@ void system::impl::update_input() {
 }
 
 void system::impl::rebuild_draw_order() {
-  bool changed = layer_signature_.size() != layers_.size();
+  bool changed = window_signature_.size() != windows_.size();
   if (!changed) {
-    for (std::size_t index = 0; index < layers_.size(); ++index) {
-      if (layer_signature_[index].first != layers_[index].get() ||
-          layer_signature_[index].second != layers_[index]->order()) {
+    for (std::size_t index = 0; index < windows_.size(); ++index) {
+      if (window_signature_[index].first != windows_[index].get() ||
+          window_signature_[index].second != windows_[index]->order()) {
         changed = true;
         break;
       }
@@ -519,15 +524,15 @@ void system::impl::rebuild_draw_order() {
     return;
   }
 
-  layer_signature_.clear();
+  window_signature_.clear();
   draw_order_.clear();
-  layer_signature_.reserve(layers_.size());
-  draw_order_.reserve(layers_.size());
-  for (const auto& layer : layers_) {
-    layer_signature_.emplace_back(layer.get(), layer->order());
-    draw_order_.push_back(layer.get());
+  window_signature_.reserve(windows_.size());
+  draw_order_.reserve(windows_.size());
+  for (const auto& content : windows_) {
+    window_signature_.emplace_back(content.get(), content->order());
+    draw_order_.push_back(content.get());
   }
-  std::stable_sort(draw_order_.begin(), draw_order_.end(), [](const layer* left, const layer* right) {
+  std::stable_sort(draw_order_.begin(), draw_order_.end(), [](const window* left, const window* right) {
     return left->order() < right->order();
   });
 }
@@ -560,15 +565,13 @@ ImGuiWindowFlags system::impl::window_flags(const window& content) const {
   return flags;
 }
 
-void system::impl::build_window_name(const layer& layer, const window& content) {
+void system::impl::build_window_name(const window& content) {
   const std::string_view title = content.title();
   const std::string_view id = content.id();
 
   window_name_.clear();
   window_name_.append(title.data(), title.size());
   window_name_ += "###";
-  window_name_ += layer.name();
-  window_name_ += '/';
   window_name_.append(id.data(), id.size());
 }
 
@@ -584,40 +587,32 @@ void system::impl::draw(const system& owner) {
 
     ImGuiIO& io = ImGui::GetIO();
     const ImVec2 display = io.DisplaySize;
+    const rect viewport{ 0.0f, 0.0f, display.x, display.y };
+    window_names_.clear();
 
-    for (layer* layer : draw_order_) {
-      if (layer == nullptr || !layer->visible() || !layer->has_visible_windows()) {
+    for (window* content : draw_order_) {
+      if (content == nullptr || !content->visible()) {
         continue;
       }
-
-      layer_window_names_.clear();
-
-      for (auto& content : detail::layer_access::windows(*layer)) {
-        if (content == nullptr || !content->visible()) {
-          continue;
-        }
-        if (content->title().find("###") != std::string_view::npos) {
-          throw std::invalid_argument("cyberverse::ui::system: a window title must not contain \"###\"");
-        }
-
-        build_window_name(*layer, *content);
-        layer_window_names_.push_back(window_name_);
-
-        const rect viewport{ 0.0f, 0.0f, display.x, display.y };
-        const std::optional<rect> requested = content->window_rect(viewport);
-        const rect bounds = requested.has_value() ? sanitize_window_rect(*requested, viewport) : viewport;
-        managed_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id(), bounds };
-        if (scope.visible()) {
-          window_context context{ owner, *layer, bounds, static_cast<double>(io.DeltaTime), frame_index_, scale_ };
-          content->draw(context);
-        }
+      if (content->title().find("###") != std::string_view::npos) {
+        throw std::invalid_argument("cyberverse::ui::system: a window title must not contain \"###\"");
       }
 
-      // Raise this layer's windows in window order so the last window wins, then
-      // continue with the next (higher) layer.
-      for (const std::string& name : layer_window_names_) {
-        detail::bring_window_to_front(name.c_str());
+      build_window_name(*content);
+      window_names_.push_back(window_name_);
+
+      const std::optional<rect> requested = content->window_rect(viewport);
+      const rect bounds = requested.has_value() ? sanitize_window_rect(*requested, viewport) : viewport;
+      managed_window_scope scope{ window_name_.c_str(), window_flags(*content), content->id(), bounds };
+      if (scope.visible()) {
+        window_context context{ owner, bounds, static_cast<double>(io.DeltaTime), frame_index_, scale_ };
+        content->draw(context);
       }
+    }
+
+    // Raise windows in draw order so the last visible window wins.
+    for (const std::string& name : window_names_) {
+      detail::bring_window_to_front(name.c_str());
     }
   } catch (...) {
     abort_frame();
@@ -721,13 +716,13 @@ std::unique_ptr<system> system::create(const system_config& config) {
   return std::unique_ptr<system>(new system(std::move(implementation)));
 }
 
-layer& system::add_layer(std::unique_ptr<layer> layer) { return impl_->add_layer(std::move(layer)); }
+window& system::add_window(std::unique_ptr<window> content) { return impl_->add_window(std::move(content)); }
 
-bool system::remove_layer(layer& layer) noexcept { return impl_->remove_layer(layer); }
+bool system::remove_window(window& content) noexcept { return impl_->remove_window(content); }
 
-void system::clear_layers() { impl_->clear_layers(); }
+void system::clear_windows() { impl_->clear_windows(); }
 
-layer* system::find_layer(std::string_view name) noexcept { return impl_->find_layer(name); }
+window* system::find_window(std::string_view id) noexcept { return impl_->find_window(id); }
 
 bool system::has_visible_content() const noexcept { return impl_->has_visible_content(); }
 

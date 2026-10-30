@@ -72,6 +72,7 @@ public:
   std::string id_value = "test.window";
   std::string title_value;
   bool visible_value = true;
+  int order_value = 0;
   window_feature feature_value = window_feature::none;
   std::optional<rect> rect_value;
   bool throw_on_draw = false;
@@ -84,6 +85,7 @@ public:
   [[nodiscard]] std::string_view id() const noexcept override { return id_value; }
   [[nodiscard]] std::string_view title() const noexcept override { return title_value; }
   [[nodiscard]] bool visible() const noexcept override { return visible_value; }
+  [[nodiscard]] int order() const noexcept override { return order_value; }
   [[nodiscard]] window_feature features() const noexcept override { return feature_value; }
   [[nodiscard]] std::optional<rect> window_rect(const rect& /*viewport*/) const noexcept override { return rect_value; }
 
@@ -101,12 +103,10 @@ public:
   }
 };
 
-[[nodiscard]] inline std::string window_name(std::string_view layer, std::string_view id, std::string_view title = {}) {
+[[nodiscard]] inline std::string window_name(std::string_view id, std::string_view title = {}) {
   std::string name;
   name.append(title.data(), title.size());
   name += "###";
-  name.append(layer.data(), layer.size());
-  name += '/';
   name.append(id.data(), id.size());
   return name;
 }

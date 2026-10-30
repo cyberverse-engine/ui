@@ -16,7 +16,7 @@ add_executable(
   font_test.cpp
   gpu_smoke_test.cpp
   input_bridge_test.cpp
-  layer_test.cpp
+  window_ordering_test.cpp
   window_test.cpp
   widgets_test.cpp
   frame_stage_test.cpp

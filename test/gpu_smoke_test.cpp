@@ -21,14 +21,11 @@
 #include "cyberverse/render_core/render_device.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/imgui.hpp"
-#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/window.hpp"
 
 namespace {
 
-using cyberverse::ui::layer;
-using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::system_config;
 using cyberverse::ui::window;
@@ -77,9 +74,7 @@ TEST_CASE("ui renders one overlay pass to a real swap chain", "[ui][gpu]") {
     config.fonts = { cyberverse::ui::font_config{ .id = "default", .size = 16.0f } };
     auto ui = system::create(config);
 
-    auto layer = std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "gpu.layer" });
-    layer->add_window(std::make_unique<smoke_window>());
-    ui->add_layer(std::move(layer));
+    ui->add_window(std::make_unique<smoke_window>());
 
     const auto frame = device->begin_frame(1.0 / 60.0);
     REQUIRE(ui->begin_frame(frame, 1.0 / 60.0));

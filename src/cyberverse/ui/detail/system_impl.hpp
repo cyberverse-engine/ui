@@ -23,8 +23,8 @@
 #include <imgui.h>
 
 #include "cyberverse/ui/detail/input_bridge.hpp"
-#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
+#include "cyberverse/ui/window.hpp"
 
 namespace cyberverse {
 namespace ui {
@@ -33,7 +33,7 @@ namespace ui {
  * @brief Private implementation of ui::system
  *
  * Holds the single Dear ImGui context, the Diligent ImGui renderer, the input
- * bridge, the font cache, and the ordered layer stack.
+ * bridge, the font cache, and the ordered window list.
  *
  */
 struct system::impl {
@@ -45,10 +45,10 @@ struct system::impl {
   impl& operator=(const impl&) = delete;
   impl& operator=(impl&&) = delete;
 
-  layer& add_layer(std::unique_ptr<layer> layer);
-  bool remove_layer(layer& layer) noexcept;
-  void clear_layers();
-  [[nodiscard]] layer* find_layer(std::string_view name) noexcept;
+  window& add_window(std::unique_ptr<window> content);
+  bool remove_window(window& content) noexcept;
+  void clear_windows();
+  [[nodiscard]] window* find_window(std::string_view id) noexcept;
   [[nodiscard]] bool has_visible_content() const noexcept;
 
   bool begin_frame(const render_core::frame_context& frame, double delta_time);
@@ -79,7 +79,7 @@ private:
   void update_input();
   void rebuild_draw_order();
   [[nodiscard]] ImGuiWindowFlags window_flags(const window& content) const;
-  void build_window_name(const layer& layer, const window& content);
+  void build_window_name(const window& content);
   void abort_frame() noexcept;
   void destroy_context() noexcept;
 
@@ -88,10 +88,10 @@ private:
   std::unique_ptr<Diligent::ImGuiDiligentRenderer> renderer_;
   std::string ini_path_;
   std::string window_name_;
-  std::vector<std::string> layer_window_names_;
-  std::vector<std::unique_ptr<layer>> layers_;
-  std::vector<layer*> draw_order_;
-  std::vector<std::pair<layer*, int>> layer_signature_;
+  std::vector<std::string> window_names_;
+  std::vector<std::unique_ptr<window>> windows_;
+  std::vector<window*> draw_order_;
+  std::vector<std::pair<window*, int>> window_signature_;
   std::unordered_map<std::string, bool> font_loaded_;
   std::vector<std::vector<ImWchar>> custom_ranges_;
   detail::input_bridge input_;

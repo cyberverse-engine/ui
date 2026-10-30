@@ -1,20 +1,22 @@
 # Cyberverse UI 路线图
 
-## 1. 当前版本：v0.5
+## 1. 当前版本：v0.6
 
 - **定位：** 固定 Dear ImGui + DiligentEngine 的分层 UI 运行时，加一套函数式
   widgets 组件层。
 - **硬依赖：** `runtime`、`platform`、`render-core`、Dear ImGui、
   DiligentEngine、`animation`（仅 widgets 属性动画）。
-- **不再依赖 Yoga。** 旧即时模式 widgets 树和旧 `panel` 容器已经移除。
+- **不依赖 Yoga。** 旧即时模式 widgets 树和旧 `panel` 容器已经移除。
+- **没有独立 layer。** `system` 直接管理有序 window 列表。
 
 ```text
 ui::system
-  └─ ui::layer
-       └─ ui::window  (受管顶层 ImGui 窗口)
-            └─ application draw(window_context&)
-                 └─ ui::widgets::run(root, {dt, theme, animator})
-                      └─ widgets::state + component<Impl>
+  ├─ window A (order 400)
+  ├─ window B (order 300)
+  └─ window C (order 200)
+       └─ application draw(window_context&)
+            └─ ui::widgets::run(root, {dt, theme, animator})
+                 └─ widgets::state + component<Impl>
 ```
 
 ## 2. 核心分层
@@ -27,33 +29,30 @@ ui::system
 - Diligent ImGui renderer；
 - 平台输入桥；
 - 字体与 ImGui 主题；
-- 有序 layer 栈；
-- 每帧的 ImGui `NewFrame`/`Render` 生命周期。
+- 有序 window 列表；
+- 每帧的 ImGui `NewFrame`/`Render` 生命周期；
+- window 名称、feature flags、局部矩形和 z-order。
 
 一个引擎帧最多打开一个 ImGui 帧。非 headless 帧绑定 color/depth target 并重置
 scissor。
 
-### 2.2 `ui::layer`
-
-- 名称、顺序、可见性；
-- 拥有有序 `ui::window` 列表；
-- layer 间按 order 绘制，同 order 保持插入顺序；
-- 结构变更只能在帧间进行；
-- 隐藏 layer 跳过绘制和布局。
-
-### 2.3 `ui::window`
+### 2.2 `ui::window`
 
 顶层窗口宿主，不是 widget。
 
-- `id`、`title`、`visible`、`features`、`window_rect`、`draw(window_context&)`；
-- 默认填满 layer viewport；
+- `id`、`title`、`order`、`visible`、`features`、`window_rect`、
+  `draw(window_context&)`；
+- 默认填满 system viewport；
 - `window_rect` 可请求局部窗口，system 负责 clamp；
+- `order()` 数值越大越靠上，相同 order 保持插入顺序；
 - feature：title bar、scrollbar、transparent、no input、focus on appearing、
   bring to front on focus；
 - 输入捕获、z-order、异常清理由 system 统一处理；
 - 窗口内容可以用原生 ImGui，也可以调用 `widgets::run`。
 
-### 2.4 `ui::widgets`
+window id 在 system 内全局唯一；ImGui 窗口名为 `title###id`。
+
+### 2.3 `ui::widgets`
 
 函数式组件层：
 
@@ -86,7 +85,7 @@ tick 输入属性 → measure → 设置 bounds → draw
 | `stack` | 编译期固定子项的一维排布 |
 | `flexbox` | no-wrap row/column、gap/padding、justify/align、grow/shrink/basis |
 | `scroll_view` | 双轴滚动、滚轮和双滚动条、静态子项 |
-| `box` | 带背景/边框/圆角的单子项内容容器，替代旧 `widgets::panel` |
+| `box` | 带背景/边框/圆角的单子项内容容器 |
 
 不支持：
 
@@ -115,10 +114,12 @@ tick 输入属性 → measure → 设置 bounds → draw
    - 输入送入 ImGui；
    - `ImGui::NewFrame()`；
 4. `system::draw()`：
-   - 按 layer order 遍历；
-   - 每个可见 window 创建受管 ImGui window；
+   - 按 window `order()` 升序遍历；
+   - 跳过隐藏 window；
+   - 创建受管 ImGui window；
    - 计算 viewport/local rect；
    - 调用 `window::draw(window_context&)`；
+   - 按绘制顺序 raise；
 5. `system::end_frame()`：
    - `ImGui::Render()`；
    - 一次 `RenderDrawData()`；
@@ -130,7 +131,7 @@ tick 输入属性 → measure → 设置 bounds → draw
 
 ### M0 — 固定分层运行时（完成）
 
-- system/layer/window/frame_stage；
+- system/window/frame_stage；
 - 字体、IME、输入桥、z-order。
 
 ### M1 — 函数式 widgets（完成）
@@ -147,7 +148,7 @@ tick 输入属性 → measure → 设置 bounds → draw
 - box；
 - 零尺寸规则。
 
-### M3 — 单一 widgets 层（本次）
+### M3 — 单一 widgets 层（完成）
 
 - 删除旧 Yoga widgets；
 - 删除旧 `widgets::panel`；
@@ -156,14 +157,23 @@ tick 输入属性 → measure → 设置 bounds → draw
 - sandbox/diagnosis 迁移；
 - 删除 Yoga 依赖和 CMake 模块。
 
-### M4 — 稳定性与文档（进行中）
+### M4 — 合并 window/layer（完成）
+
+- 删除 `ui::layer`；
+- system 直接拥有 window；
+- layer 的 order/visibility 合并进 window；
+- window id 改为 system 全局唯一；
+- z-order 改为 window order + 插入顺序；
+- sandbox/diagnosis 改为逐 window 可见性。
+
+### M5 — 稳定性与文档（进行中）
 
 - headless 交互测试；
 - GPU smoke；
 - sandbox/diagnosis 回归；
 - 文档和示例统一到 window + widgets。
 
-### M5 — 文本与 IME 完善（待做）
+### M6 — 文本与 IME 完善（待做）
 
 - macOS inline preedit/candidate 定位；
 - IME composition 渲染；
@@ -173,6 +183,7 @@ tick 输入属性 → measure → 设置 bounds → draw
 ## 7. 非目标
 
 - 不重新引入 Yoga、第二套布局引擎或第二套 widgets；
+- 不重新引入 layer 或 window-group 中间层；
 - 不实现动态子项列表；
 - 不实现 collapse_group/native；
 - 不实现 flex-wrap；

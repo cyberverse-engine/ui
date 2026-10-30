@@ -17,7 +17,6 @@
 #include "cyberverse/render_core/frame_context.hpp"
 #include "cyberverse/runtime/frame_budget.hpp"
 #include "cyberverse/ui/frame_stage.hpp"
-#include "cyberverse/ui/layer.hpp"
 #include "cyberverse/ui/system.hpp"
 #include "cyberverse/ui/window.hpp"
 #include "support/test_ui.hpp"
@@ -28,8 +27,6 @@ using cyberverse::render_core::frame_context;
 using cyberverse::render_core::viewport;
 using cyberverse::runtime::frame_budget;
 using cyberverse::ui::frame_stage;
-using cyberverse::ui::layer;
-using cyberverse::ui::layer_desc;
 using cyberverse::ui::system;
 using cyberverse::ui::test::fake_window;
 using cyberverse::ui::test::make_headless;
@@ -49,10 +46,9 @@ frame_context detached_frame() {
 
 TEST_CASE("the runtime adapter drives one ImGui frame through its provider", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_window>();
   fake_window* content_ptr = content.get();
-  layer.add_window(std::move(content));
+  context.ui->add_window(std::move(content));
 
   int provider_calls = 0;
   frame_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
@@ -71,10 +67,9 @@ TEST_CASE("the runtime adapter drives one ImGui frame through its provider", "[u
 
 TEST_CASE("the runtime adapter skips the provider without visible content", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_window>();
   content->visible_value = false;
-  layer.add_window(std::move(content));
+  context.ui->add_window(std::move(content));
 
   int provider_calls = 0;
   frame_stage stage{ *context.ui, [&provider_calls](double, double, const frame_budget&) {
@@ -91,10 +86,9 @@ TEST_CASE("the runtime adapter skips the provider without visible content", "[ui
 
 TEST_CASE("the runtime adapter ignores an invalid frame", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_window>();
   fake_window* content_ptr = content.get();
-  layer.add_window(std::move(content));
+  context.ui->add_window(std::move(content));
 
   frame_stage stage{ *context.ui, [](double, double, const frame_budget&) {
                       return frame_context{};
@@ -107,10 +101,9 @@ TEST_CASE("the runtime adapter ignores an invalid frame", "[ui][runtime-stage]")
 
 TEST_CASE("window exceptions propagate through the runtime adapter", "[ui][runtime-stage]") {
   auto context = make_headless(320, 200, false);
-  auto& layer = context.ui->add_layer(std::make_unique<cyberverse::ui::layer>(layer_desc{ .name = "app" }));
   auto content = std::make_unique<fake_window>();
   content->throw_on_draw = true;
-  layer.add_window(std::move(content));
+  context.ui->add_window(std::move(content));
 
   frame_stage stage{ *context.ui, [](double, double, const frame_budget&) {
                       return detached_frame();

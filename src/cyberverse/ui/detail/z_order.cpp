@@ -1,7 +1,7 @@
 /**
  * @file z_order.cpp
  * @author simon2077s (simon2077s@gmail.com)
- * @brief Layer z-order protection through Dear ImGui internals
+ * @brief Window z-order protection through Dear ImGui internals
  * @version 0.3
  * @date 2026-10-27
  *
