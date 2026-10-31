@@ -18,12 +18,15 @@ not a backend-agnostic framework.
   Do not add virtual widget bases, type erasure, `std::vector` child storage, or
   dynamic child ownership. The only intentional `std::function` is the state
   event handler.
-- `ui::widgets` v1 includes `text`, `button`, `checkbox`, `radio`, `radio_group`, `text_input`,
+- `ui::widgets` v1 includes `text`, `button`, `checkbox`, `radio`, `radio_group`, `text_input`, `native`,
   `divider`, `stack`, no-wrap `flexbox`, dual-axis `scroll_view`, and `box`.
   Flex item sizing is driven by animated width/height/flex_* inputs; do not add
   a separate layout-result (FLIP) animation layer.
 - Explicit zero width or height must skip child measurement and drawing.
   Containers must skip zero-size children and gaps.
+- `min_width` / `min_height` / `max_width` / `max_height` are flex sizing
+  constraints; `native` wraps measurable raw ImGui draw callbacks without
+  `std::function`.
 - Widget animation time is `widget_context.window.delta_time`; there is no
   widget animator or separate pause/speed control.
 - `ui::widgets` may depend on `ui::window_context` through `widget_context`,

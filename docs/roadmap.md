@@ -105,6 +105,7 @@ pause/speed 控制，暂停或变速由 runtime clock 负责。
 | `flexbox` | no-wrap row/column、gap/padding、justify/align、grow/shrink/basis |
 | `scroll_view` | 双轴滚动、滚轮和双滚动条、静态子项 |
 | `box` | 带背景/边框/圆角的单子项内容容器 |
+| `native` | 可测量的原始 ImGui 绘制包装 |
 
 不支持：
 
@@ -117,6 +118,7 @@ pause/speed 控制，暂停或变速由 runtime clock 负责。
 ## 4. 尺寸与动画
 
 - `width`、`height`、`opacity`、`font_size` 是 float property；
+- flex 子项支持 `min_width`、`min_height`、`max_width`、`max_height`；
 - flex 子项还读取 `flex_grow`、`flex_shrink`、`flex_basis`；
 - 滚动偏移是 `scroll_x`、`scroll_y`；
 - 动画只作用于布局输入，布局结果由每次 measure/layout 重新计算；

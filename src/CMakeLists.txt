@@ -28,6 +28,7 @@ set(
   cyberverse/ui/widgets/event.hpp
   cyberverse/ui/widgets/flex_types.hpp
   cyberverse/ui/widgets/flexbox.hpp
+  cyberverse/ui/widgets/native.hpp
   cyberverse/ui/widgets/property.hpp
   cyberverse/ui/widgets/radio.hpp
   cyberverse/ui/widgets/radio_group.hpp

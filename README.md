@@ -133,7 +133,8 @@ control; pause or time-scale the runtime clock instead.
 - `divider` (horizontal/vertical);
 - `stack`, no-wrap `flexbox`, and `scroll_view` with simultaneous vertical and
   horizontal scrolling;
-- `box`, a styled single-child container replacing the old `widgets::panel`.
+- `box`, a styled single-child container replacing the old `widgets::panel`;
+- `native`, a measurable wrapper around raw ImGui draw code.
 
 `radio_group` takes a caller-owned `int& selected` (an index), copies its labels,
 and emits `value_changed` on the group state after updating `selected`. The
@@ -161,8 +162,9 @@ Layout changes derived from a click are applied on the next frame because the
 selected index changes during draw.
 
 Visibility is stored in state: `visible`, `invisible` (layout retained, not
-drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`,
-`width`, and `height` are animatable float properties. Flexbox reads
+drawn), and `collapsed` (neither layout nor draw). `opacity`, `font_size`, `width`, `height`, `min_width`, `min_height`,
+`max_width`, and `max_height` are animatable float properties. Flexbox reads the
+min/max size properties. Flexbox reads
 `flex_grow`, `flex_shrink`, and `flex_basis` from the child state. Layout results
 are recomputed from animated inputs; there is no separate layout-result FLIP
 layer.

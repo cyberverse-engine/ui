@@ -18,6 +18,7 @@
 #include "cyberverse/ui/widgets/divider.hpp"
 #include "cyberverse/ui/widgets/event.hpp"
 #include "cyberverse/ui/widgets/flexbox.hpp"
+#include "cyberverse/ui/widgets/native.hpp"
 #include "cyberverse/ui/widgets/property.hpp"
 #include "cyberverse/ui/widgets/radio.hpp"
 #include "cyberverse/ui/widgets/radio_group.hpp"

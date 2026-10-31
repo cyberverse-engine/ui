@@ -820,3 +820,59 @@ TEST_CASE("widgets font_size changes text layout", "[ui][widgets][font]") {
   REQUIRE(large_s.bounds().height > default_s.bounds().height);
   REQUIRE(large_s.bounds().height == Catch::Approx(28.0f));
 }
+
+TEST_CASE("widgets native delegates measurement", "[ui][widgets][native]") {
+  theme appearance;
+  state native_s{ "native.measure" };
+  auto component = widgets::native(
+      native_s,
+      [](const widgets::theme&, const widgets::constraints&) {
+        return widgets::layout_size{ 123.0f, 45.0f };
+      },
+      [](widgets::widget_context&, const widgets::rect&) {
+      });
+
+  const widgets::layout_size size = component.measure(appearance, widgets::constraints{ 640.0f, 480.0f });
+  REQUIRE(size.width == Catch::Approx(123.0f));
+  REQUIRE(size.height == Catch::Approx(45.0f));
+}
+
+TEST_CASE("widgets flexbox enforces max width", "[ui][widgets][flexbox][max]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  theme appearance;
+  state layout_s{ "flex.max.layout" };
+  state first_s{ "flex.max.first" };
+  state second_s{ "flex.max.second" };
+  layout_s.set(property_type::width, 1000.0f);
+  layout_s.set(property_type::height, 100.0f);
+  for (state* child_s : { &first_s, &second_s }) {
+    child_s->set(property_type::flex_grow, 1.0f);
+    child_s->set(property_type::flex_basis, 0.0f);
+  }
+  first_s.set(property_type::max_width, 400.0f);
+  second_s.set(property_type::max_width, 600.0f);
+
+  auto window = std::make_unique<host_window>("widgets.max", [&](window_context& window_context) {
+    auto first = widgets::native(
+        first_s,
+        [](const widgets::theme&, const widgets::constraints&) {
+          return widgets::layout_size{};
+        },
+        [](widgets::widget_context&, const widgets::rect&) {
+        });
+    auto second = widgets::native(
+        second_s,
+        [](const widgets::theme&, const widgets::constraints&) {
+          return widgets::layout_size{};
+        },
+        [](widgets::widget_context&, const widgets::rect&) {
+        });
+    auto row = widgets::flexbox(layout_s, widgets::flex_options{}, first, second);
+    widgets::run(window_context, appearance, row);
+  });
+  context.ui->add_window(std::move(window));
+  run_frame(*context.ui);
+
+  REQUIRE(first_s.bounds().width == Catch::Approx(400.0f));
+  REQUIRE(second_s.bounds().width == Catch::Approx(500.0f));
+}

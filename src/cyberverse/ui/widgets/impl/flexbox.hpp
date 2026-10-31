@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <limits>
 #include <tuple>
 
 #include "cyberverse/ui/widgets/component.hpp"
@@ -50,6 +51,10 @@ struct flexbox {
     float cross = 0.0f;
     float grow = 0.0f;
     float shrink = 1.0f;
+    float min_main = 0.0f;
+    float max_main = std::numeric_limits<float>::infinity();
+    float min_cross = 0.0f;
+    float max_cross = std::numeric_limits<float>::infinity();
   };
 
   template <typename Child>
@@ -81,6 +86,31 @@ struct flexbox {
         child.s.has(property_type::flex_grow) ? std::max(0.0f, child.s.value(property_type::flex_grow)) : 0.0f;
     result.shrink =
         child.s.has(property_type::flex_shrink) ? std::max(0.0f, child.s.value(property_type::flex_shrink)) : 1.0f;
+
+    const property_type min_main_property = horizontal ? property_type::min_width : property_type::min_height;
+    const property_type max_main_property = horizontal ? property_type::max_width : property_type::max_height;
+    const property_type min_cross_property = horizontal ? property_type::min_height : property_type::min_width;
+    const property_type max_cross_property = horizontal ? property_type::max_height : property_type::max_width;
+    if (child.s.has(min_main_property)) {
+      result.min_main = std::max(0.0f, child.s.value(min_main_property));
+    }
+    if (child.s.has(max_main_property)) {
+      result.max_main = std::max(0.0f, child.s.value(max_main_property));
+    }
+    if (child.s.has(min_cross_property)) {
+      result.min_cross = std::max(0.0f, child.s.value(min_cross_property));
+    }
+    if (child.s.has(max_cross_property)) {
+      result.max_cross = std::max(0.0f, child.s.value(max_cross_property));
+    }
+
+    const float main_low = std::min(result.min_main, result.max_main);
+    const float main_high = std::max(result.min_main, result.max_main);
+    const float cross_low = std::min(result.min_cross, result.max_cross);
+    const float cross_high = std::max(result.min_cross, result.max_cross);
+    result.base_main = std::clamp(result.base_main, main_low, main_high);
+    result.main = result.base_main;
+    result.cross = std::clamp(result.cross, cross_low, cross_high);
     return result;
   }
 
@@ -162,7 +192,7 @@ struct flexbox {
     }
 
     const float total_gap = active_count > 1 ? gap * static_cast<float>(active_count - 1) : 0.0f;
-    float free = inner_main - total_gap - base_main;
+    const float free = inner_main - total_gap - base_main;
 
     if (free > 0.0f && total_grow > 0.0f) {
       const float distributable = free;
@@ -171,7 +201,6 @@ struct flexbox {
           value.main += distributable * value.grow / total_grow;
         }
       }
-      free = 0.0f;
     } else if (free < 0.0f && total_shrink_weight > 0.0f) {
       const float deficit = -free;
       for (item& value : items) {
@@ -179,10 +208,20 @@ struct flexbox {
           value.main = std::max(0.0f, value.main - deficit * (value.shrink * value.base_main) / total_shrink_weight);
         }
       }
-      free = 0.0f;
     }
 
-    const float leftover = std::max(0.0f, free);
+    float used_main = total_gap;
+    for (item& value : items) {
+      if (!value.active) {
+        continue;
+      }
+      const float low = std::min(value.min_main, value.max_main);
+      const float high = std::max(value.min_main, value.max_main);
+      value.main = std::clamp(value.main, low, high);
+      used_main += value.main;
+    }
+
+    const float leftover = std::max(0.0f, inner_main - used_main);
     float main_cursor = horizontal ? options.padding.left : options.padding.top;
     float justify_extra = 0.0f;
     switch (options.justify) {
@@ -255,6 +294,9 @@ private:
     if (options.align == align_items::stretch && !value.cross_explicit) {
       cross = inner_cross;
     }
+    const float cross_low = std::min(value.min_cross, value.max_cross);
+    const float cross_high = std::max(value.min_cross, value.max_cross);
+    cross = std::clamp(cross, cross_low, cross_high);
 
     float cross_offset = 0.0f;
     switch (options.align) {

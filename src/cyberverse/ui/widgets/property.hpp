@@ -25,6 +25,10 @@ namespace widgets {
 enum class property_type {
   width,
   height,
+  min_width,
+  min_height,
+  max_width,
+  max_height,
   opacity,
   font_size,
   flex_grow,
