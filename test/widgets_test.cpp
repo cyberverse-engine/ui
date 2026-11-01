@@ -867,7 +867,8 @@ TEST_CASE("widgets flexbox enforces max width", "[ui][widgets][flexbox][max]") {
         },
         [](widgets::widget_context&, const widgets::rect&) {
         });
-    auto row = widgets::flexbox(layout_s, widgets::flex_options{}, first, second);
+    auto row =
+        widgets::flexbox(layout_s, widgets::flex_options{ .align = widgets::align_items::stretch }, first, second);
     widgets::run(window_context, appearance, row);
   });
   context.ui->add_window(std::move(window));
@@ -875,4 +876,45 @@ TEST_CASE("widgets flexbox enforces max width", "[ui][widgets][flexbox][max]") {
 
   REQUIRE(first_s.bounds().width == Catch::Approx(400.0f));
   REQUIRE(second_s.bounds().width == Catch::Approx(500.0f));
+}
+
+TEST_CASE("widgets flexbox skips a zero flex allocation without changing the child state",
+          "[ui][widgets][flexbox][animation]") {
+  auto context = make_headless(static_cast<int>(width), static_cast<int>(height));
+  theme appearance;
+  state layout_s{ "flex.collapse.layout" };
+  state detail_s{ "flex.collapse.detail" };
+  layout_s.set(property_type::width, 200.0f);
+  layout_s.set(property_type::height, 120.0f);
+  detail_s.set(property_type::flex_grow, 1.0f);
+  detail_s.set(property_type::flex_basis, 0.0f);
+  int draws = 0;
+
+  auto window = std::make_unique<host_window>("widgets.collapse", [&](window_context& window_context) {
+    auto detail = widgets::native(
+        detail_s,
+        [](const widgets::theme&, const widgets::constraints&) {
+          return widgets::layout_size{};
+        },
+        [&draws](widgets::widget_context&, const widgets::rect&) {
+          ++draws;
+        });
+    auto column = widgets::flexbox(
+        layout_s,
+        widgets::flex_options{ .direction = widgets::flex_direction::column, .align = widgets::align_items::stretch },
+        detail);
+    widgets::run(window_context, appearance, column);
+  });
+  context.ui->add_window(std::move(window));
+  run_frame(*context.ui);
+  REQUIRE(detail_s.bounds().width > 0.0f);
+  REQUIRE(draws == 1);
+  REQUIRE(detail_s.bounds().height == Catch::Approx(120.0f));
+
+  detail_s.set(property_type::flex_grow, 0.0f);
+  run_frame(*context.ui);
+  REQUIRE(draws == 1);
+  REQUIRE(detail_s.bounds().height == Catch::Approx(0.0f));
+  REQUIRE(detail_s.get_visibility() == widgets::visibility::visible);
+  REQUIRE(detail_s.value(property_type::flex_grow) == Catch::Approx(0.0f));
 }

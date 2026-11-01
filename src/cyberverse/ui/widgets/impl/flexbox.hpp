@@ -286,10 +286,6 @@ private:
       return;
     }
 
-    if (placed > 0) {
-      main_cursor += gap + justify_extra;
-    }
-
     float cross = value.cross;
     if (options.align == align_items::stretch && !value.cross_explicit) {
       cross = inner_cross;
@@ -297,6 +293,21 @@ private:
     const float cross_low = std::min(value.min_cross, value.max_cross);
     const float cross_high = std::max(value.min_cross, value.max_cross);
     cross = std::clamp(cross, cross_low, cross_high);
+
+    const float width = horizontal ? value.main : cross;
+    const float height = horizontal ? cross : value.main;
+    if (width <= 0.0f || height <= 0.0f) {
+      // A flex allocation can become zero while the child remains active (for
+      // example when flex_grow animates to zero). Do not mutate the child's
+      // sizing/visibility properties; only publish the zero layout bounds and
+      // skip drawing this item.
+      detail::state_access::set_bounds(child.s, rect{});
+      return;
+    }
+
+    if (placed > 0) {
+      main_cursor += gap + justify_extra;
+    }
 
     float cross_offset = 0.0f;
     switch (options.align) {
@@ -314,8 +325,6 @@ private:
 
     const float x = origin_x + (horizontal ? main_cursor : options.padding.left + cross_offset);
     const float y = origin_y + (horizontal ? options.padding.top + cross_offset : main_cursor);
-    const float width = horizontal ? value.main : cross;
-    const float height = horizontal ? cross : value.main;
     const rect child_bounds{ x, y, width, height };
 
     detail::state_access::set_bounds(child.s, child_bounds);
